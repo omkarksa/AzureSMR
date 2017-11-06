@@ -415,3 +415,61 @@ is_content <- function(x) {
 on_failure(is_content) <- function(call, env) {
   "Provide a valid non-null raw content"
 }
+
+#' adlFileOutputStream object.
+#'
+#' Functions for creating and displaying information about adlFileOutputStream objects.
+#'
+#' @param x Object to create, test or print
+#' @param ... Ignored
+#'
+#' @seealso [createAdlFileOutputStream()]
+#' @export
+#' @rdname Internal
+as.adlFileOutputStream <- function(x){
+  if(!is.environment(x)) stop("Expecting an environment as input")
+  class(x) <- "adlFileOutputStream"
+  x
+}
+
+on_failure(is.adlFileOutputStream) <- function(call, env) {
+  "Provide a valid adlFileOutputStream. See createAdlFileOutputStream()"
+}
+
+#' @export
+#' @rdname Internal
+is.adlFileOutputStream <- function(x){
+  inherits(x, "adlFileOutputStream")
+}
+
+#' @export
+print.adlFileOutputStream <- function(x, ...){
+  cat("AzureSMR adlFileOutputStream\n")
+  #cat("Tenant ID :", x$tenantID, "\n")
+  #cat("Subscription ID :", x$subscriptionID, "\n")
+}
+
+#' @export
+str.adlFileOutputStream <- function(object, ...){
+  cat(("AzureSMR adlFileOutputStream with elements:\n"))
+  ls.str(object, all.names = TRUE)
+}
+
+#' Check the timestamp of a token and renew if needed.
+#'
+#' @inheritParams createAdlFileOutputStream
+#' @family Azure resource functions
+#' @export
+adlFileOutputStreamCheck <- function(adlFileOutputStream) {
+  if (missing(adlFileOutputStream) || is.null(adlFileOutputStream)) return(FALSE)
+  if (adlFileOutputStream$streamClosed) {
+    stop("IOException: Attempting to write to a closed stream")
+  }
+
+  if (!missing(adlFileOutputStream$azureActiveContext) && !is.null(adlFileOutputStream$azureActiveContext)) {
+    assert_that(is.azureActiveContext(adlFileOutputStream$azureActiveContext))
+    azureCheckToken(adlFileOutputStream$azureActiveContext)
+  }
+
+  return(TRUE)
+}
