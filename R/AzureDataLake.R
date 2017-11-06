@@ -357,3 +357,55 @@ azureDataLakeDelete <- function(azureActiveContext, azureDataLakeAccount, relati
   resDf <- as.data.frame(resJsonObj)
   return(resDf$boolean)
 }
+
+
+#' -----------------------------------------------------------------------------
+
+
+#' Create an adlFileOutputStream.
+#' Create a container (`adlFileOutputStream`) for holding variables used by the AzureDataLake data functions.
+#'
+#' @inheritParams setAzureContext
+#' @param accountFQDN the account FDQN
+#' @param clientID client ID 
+#' @return An `adlFileOutputStream` object
+#'
+#' @family Azure Data Lake Store functions
+createAdlFileOutputStream <- function(azureActiveContext, accountFQDN){
+  azEnv <- new.env(parent = emptyenv())
+  azEnv <- as.adlFileOutputStream(azEnv)
+  list2env(
+    list(azureActiveContext = "", accountFQDN = ""),
+    envir = azEnv
+  )
+  if (!missing(azureActiveContext)) azEnv$azureActiveContext <- azureActiveContext
+  if (!missing(accountFQDN)) azEnv$accountFQDN <- accountFQDN
+  azEnv$leaseID <- uuid()
+  azEnv$blockSize <- (4 * 1024 * 1024)
+  azEnv$buffer <- raw(0)
+  azEnv$cursor <- 0
+  azEnv$remoteCursor <- 0
+  azEnv$streamClosed <- FALSE
+  azEnv$lastFlushUpdatedMetadata <- FALSE
+  
+
+  return(azEnv)
+}
+
+#' Write to an adlFileOutputStream.
+#'
+#' @inheritParams setAzureContext
+#' @param accountFQDN the account FDQN
+#' @param clientID client ID 
+#' @return An `adlFileOutputStream` object
+#'
+#' @family Azure Data Lake Store functions
+adlFileOutputStreamWrite <- function(adlFileOutputStream, contents, offset, length) {
+  if (!missing(adlFileOutputStream) && !is.null(adlFileOutputStream)) {
+    assert_that(is.adlFileOutputStream(adlFileOutputStream))
+    adlFileOutputStreamCheck(adlFileOutputStream)
+  }
+  assert_that(is_content(contents))
+  
+  
+}
