@@ -383,10 +383,12 @@ createAdlFileOutputStream <- function(azureActiveContext, accountFQDN){
   azEnv$leaseID <- uuid()
   azEnv$blockSize <- (4 * 1024 * 1024)
   azEnv$buffer <- raw(0)
+  azEnv$bufferLength <- 0
   azEnv$cursor <- 0
   azEnv$remoteCursor <- 0
   azEnv$streamClosed <- FALSE
   azEnv$lastFlushUpdatedMetadata <- FALSE
+  azEnv$buffer <- ???
   
 
   return(azEnv)
@@ -397,15 +399,47 @@ createAdlFileOutputStream <- function(azureActiveContext, accountFQDN){
 #' @inheritParams setAzureContext
 #' @param accountFQDN the account FDQN
 #' @param clientID client ID 
-#' @return An `adlFileOutputStream` object
+#' @return NULL (void)
 #'
 #' @family Azure Data Lake Store functions
+#' @export
 adlFileOutputStreamWrite <- function(adlFileOutputStream, contents, offset, length) {
   if (!missing(adlFileOutputStream) && !is.null(adlFileOutputStream)) {
     assert_that(is.adlFileOutputStream(adlFileOutputStream))
     adlFileOutputStreamCheck(adlFileOutputStream)
   }
   assert_that(is_content(contents))
+  contentLength = getContentSize(contents)
+  if (offset < 0 || offset > contentLength || length < 0 ||
+      (offset + length) > contentLength || (offset + length) < 0) {
+    stop("IndexOutOfBoundsException: specify valid offset and length")
+  }
+  if (length == 0) {
+    return(NULL)
+  }
   
+  if (offset > contentLength || length > (contentLength - off)) {
+    stop("IllegalArgumentException: array offset and length are > array size")
+  }
   
+  # TODO: get a buffer
+  
+  while (length > adlFileOutputStream$blockSize) {
+    flush("PIPELINE")
+    addToBuffer(contents, offset, adlFileOutputStream$blockSize)
+    offset <- offset + adlFileOutputStream$blockSize
+    length <- length - adlFileOutputStream$blockSize
+  }
+}
+
+flush <- function(syncFlag = "METADATA") {
+  
+}
+
+addToBuffer <- function(adlFileOutputStream, contents, off, len) {
+  if (len > buffer.length - cursor) { # if requesting to copy more than remaining space in buffer
+    stop("IllegalArgumentException: invalid buffer copy requested in addToBuffer")
+  }
+  System.arraycopy(b, off, buffer, cursor, len)
+  cursor <- cursor + len
 }
