@@ -34,10 +34,12 @@ List the statuses of the files/directories in the given path.
 
 \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#listStatus-org.apache.hadoop.fs.Path-}
 
-Other Azure Data Lake Store functions: \code{\link{azureDataLakeAppend}},
+Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamWrite}},
+  \code{\link{azureDataLakeAppend}},
   \code{\link{azureDataLakeCreate}},
   \code{\link{azureDataLakeDelete}},
   \code{\link{azureDataLakeGetFileStatus}},
   \code{\link{azureDataLakeMkdirs}},
-  \code{\link{azureDataLakeRead}}
+  \code{\link{azureDataLakeRead}},
+  \code{\link{createAdlFileOutputStream}}
 }

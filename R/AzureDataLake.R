@@ -359,20 +359,17 @@ azureDataLakeDelete <- function(azureActiveContext, azureDataLakeAccount, relati
 }
 
 
-#' -----------------------------------------------------------------------------
-
-
 #' Create an adlFileOutputStream.
-#' Create a container (`adlFileOutputStream`) for holding variables used by the AzureDataLake data functions.
+#' Create a container (`adlFileOutputStream`) for holding variables used by the Azure Data Lake Store data functions.
 #'
 #' @inheritParams setAzureContext
 #' @param accountFQDN the account FDQN
-#' @param clientID client ID 
 #' @return An `adlFileOutputStream` object
 #'
 #' @family Azure Data Lake Store functions
+#' @export
 createAdlFileOutputStream <- function(azureActiveContext, accountFQDN){
-  azEnv <- new.env(parent = emptyenv())
+  azFOSEnv <- new.env(parent = emptyenv())
   azEnv <- as.adlFileOutputStream(azEnv)
   list2env(
     list(azureActiveContext = "", accountFQDN = ""),
@@ -419,6 +416,8 @@ adlFileOutputStreamWrite <- function(adlFileOutputStream, contents, off, len) {
   if (len == 0) {
     return(NULL)
   }
+  
+  adlFileOutputStream$buffer <- raw(0)
 
   while (len > adlFileOutputStream$blockSize) {
     flush("PIPELINE") # flush first, because we want to preserve record boundary of last append

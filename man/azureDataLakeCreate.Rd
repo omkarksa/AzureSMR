@@ -53,10 +53,12 @@ Create and write to a file.
 
 \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#create-org.apache.hadoop.fs.Path-org.apache.hadoop.fs.permission.FsPermission-boolean-int-short-long-org.apache.hadoop.util.Progressable-}
 
-Other Azure Data Lake Store functions: \code{\link{azureDataLakeAppend}},
+Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamWrite}},
+  \code{\link{azureDataLakeAppend}},
   \code{\link{azureDataLakeDelete}},
   \code{\link{azureDataLakeGetFileStatus}},
   \code{\link{azureDataLakeListStatus}},
   \code{\link{azureDataLakeMkdirs}},
-  \code{\link{azureDataLakeRead}}
+  \code{\link{azureDataLakeRead}},
+  \code{\link{createAdlFileOutputStream}}
 }

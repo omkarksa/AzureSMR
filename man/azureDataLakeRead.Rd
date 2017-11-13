@@ -42,10 +42,12 @@ Open and read a file.
 
 \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#open-org.apache.hadoop.fs.Path-int-}
 
-Other Azure Data Lake Store functions: \code{\link{azureDataLakeAppend}},
+Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamWrite}},
+  \code{\link{azureDataLakeAppend}},
   \code{\link{azureDataLakeCreate}},
   \code{\link{azureDataLakeDelete}},
   \code{\link{azureDataLakeGetFileStatus}},
   \code{\link{azureDataLakeListStatus}},
-  \code{\link{azureDataLakeMkdirs}}
+  \code{\link{azureDataLakeMkdirs}},
+  \code{\link{createAdlFileOutputStream}}
 }
