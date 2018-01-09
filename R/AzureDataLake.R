@@ -589,7 +589,7 @@ adlFileOutputStreamFlush <- function(adlFileOutputStream, syncFlag = syncFlagEnu
                              adlFileOutputStream$leaseId, adlFileOutputStream$leaseId, syncFlag, 
                              adlFileOutputStream$remoteCursor,
                              verbose)
-  # TODO: implement - error recovery/retry (?)
+  # TODO: implement - retry/error recovery (?)
   stopWithAzureError(resHttp)
   adlFileOutputStream$remoteCursor <- (adlFileOutputStream$remoteCursor + (adlFileOutputStream$cursor - 1))
   adlFileOutputStream$cursor <- 1L
