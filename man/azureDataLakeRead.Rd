@@ -51,5 +51,6 @@ Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
   \code{\link{azureDataLakeDelete}},
   \code{\link{azureDataLakeGetFileStatus}},
   \code{\link{azureDataLakeListStatus}},
-  \code{\link{azureDataLakeMkdirs}}
+  \code{\link{azureDataLakeMkdirs}},
+  \code{\link{createAdlFileOutputStream}}
 }

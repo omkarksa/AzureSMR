@@ -442,7 +442,7 @@ as.adlFileOutputStream <- function(x){
   x
 }
 
-on_failure(is.adlFileOutputStream) <- function(call, env) {
+on_failure(as.adlFileOutputStream) <- function(call, env) {
   "Provide a valid adlFileOutputStream. See createAdlFileOutputStream()"
 }
 
@@ -468,6 +468,7 @@ str.adlFileOutputStream <- function(object, ...){
 #' Check the timestamp of a token and renew if needed.
 #'
 #' @inheritParams createAdlFileOutputStream
+#' @param adlFileOutputStream the adlFileOutputStream object to check
 #' @family Azure resource functions
 #' @export
 adlFileOutputStreamCheck <- function(adlFileOutputStream) {

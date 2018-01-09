@@ -391,7 +391,7 @@ azureDataLakeAppendBOS <- function(azureActiveContext, azureDataLakeAccount, rel
 }
 
 #' Create an adlFileOutputStream.
-#' Create a container (`adlFileOutputStream`) for holding variables used by the AzureDataLake data functions.
+#' Create a container (`adlFileOutputStream`) for holding variables used by the Azure Data Lake Store data functions.
 #'
 #' @inheritParams setAzureContext
 #' @param accountName the account name
