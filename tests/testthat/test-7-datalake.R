@@ -38,6 +38,7 @@ azureAuthenticateOnAuthType(asc)
 azureDataLakeAccount <- config$azureDataLakeAccount
 
 context(" - data lake store")
+
 test_that("Can create, list, get, update and delete items in an azure data lake account", {
   skip_if_missing_config(settingsfile)
 
@@ -59,14 +60,14 @@ test_that("Can create, list, get, update and delete items in an azure data lake 
   # MKDIRS - check 1 - LISTSTATUS
   res <- azureDataLakeListStatus(asc, azureDataLakeAccount, "")
   expect_is(res, "data.frame")
-  expect_equal(nrow(res), 1)
+  expect_gte(nrow(res), 1)
   expect_equal(ncol(res), 11)
   # pathsuffix of a file/directory in liststatus will NOT be empty!
   expect_equal(res$FileStatuses.FileStatus.pathSuffix[1] == "tempfolder", TRUE)
   # MKDIRS - check 2 - GETFILESTATUS
   res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "")
   expect_is(res, "data.frame")
-  expect_equal(nrow(res), 1)
+  expect_gte(nrow(res), 1)
   expect_equal(ncol(res), 11)
   # pathsuffix of a directory in getfilestatus will be empty!
   expect_equal(res$FileStatus.pathSuffix == "", TRUE)
@@ -119,9 +120,92 @@ test_that("Can create, list, get, update and delete items in an azure data lake 
   # DELETE
   res <- azureDataLakeDelete(asc, azureDataLakeAccount, "tempfolder", TRUE)
   expect_true(res)
-  # DELETE - check
-  res <- azureDataLakeListStatus(asc, azureDataLakeAccount, "")
-  expect_is(res, "data.frame")
-  expect_equal(nrow(res), 0)
 })
 
+datafile2MB <- paste0(getwd(), "/data/test2MB.bin")
+datafile4MB <- paste0(getwd(), "/data/test4MB.bin")
+datafile6MB <- paste0(getwd(), "/data/test6MB.bin")
+
+test_that("Can append and read using buffered IO streams from files in an azure data lake account", {
+  skip_if_missing_config(settingsfile)
+
+  # cleanup the account before starting tests!
+  try(
+    azureDataLakeDelete(asc, azureDataLakeAccount, "tempfolder1", TRUE)
+  )
+
+  # MKDIRS
+  res <- azureDataLakeMkdirs(asc, azureDataLakeAccount, "tempfolder1")
+  expect_true(res)
+
+  # CREATE
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test2MB.bin", "755")
+  expect_null(res)
+  # APPEND - test2MB.bin
+  print(datafile2MB)
+  binData <- readBin(con = datafile2MB, what = "raw", n = 2097152)
+  adlFOS <- azureDataLakeAppendBOS(asc, azureDataLakeAccount, "tempfolder1/test2MB.bin")
+  expect_is(adlFOS, "adlFileOutputStream")
+  res <- adlFileOutputStreamWrite(adlFOS, binData, 1, 2097152L)
+  expect_null(res)
+  res <- adlFileOutputStreamClose(adlFOS)
+  expect_null(res)
+  # APPEND - test2MB.bin - check
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "tempfolder1/test2MB.bin")
+  expect_is(res, "data.frame")
+  expect_equal(nrow(res), 1)
+  expect_equal(ncol(res), 12)
+  # pathsuffix of a file in getfilestatus will be empty!
+  expect_equal(res$FileStatus.pathSuffix == "", TRUE)
+  expect_equal(res$FileStatus.length, 2097152)
+
+  # CREATE
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test4MB.bin", "755")
+  expect_null(res)
+  # APPEND - test4MB.bin
+  binData <- readBin(con = datafile4MB, what = "raw", n = 4194304)
+  adlFOS <- azureDataLakeAppendBOS(asc, azureDataLakeAccount, "tempfolder1/test4MB.bin")
+  expect_is(adlFOS, "adlFileOutputStream")
+  res <- adlFileOutputStreamWrite(adlFOS, binData, 1, 4194304L)
+  expect_null(res)
+  res <- adlFileOutputStreamClose(adlFOS)
+  expect_null(res)
+  # APPEND - test4MB.bin - check
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "tempfolder1/test4MB.bin")
+  expect_is(res, "data.frame")
+  expect_equal(nrow(res), 1)
+  expect_equal(ncol(res), 12)
+  # pathsuffix of a file in getfilestatus will be empty!
+  expect_equal(res$FileStatus.pathSuffix == "", TRUE)
+  expect_equal(res$FileStatus.length, 4194304)
+
+  # CREATE
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test6MB.bin", "755")
+  expect_null(res)
+  # APPEND - test6MB.bin
+  binData <- readBin(con = datafile6MB, what = "raw", n = 6291456)
+  adlFOS <- azureDataLakeAppendBOS(asc, azureDataLakeAccount, "tempfolder1/test6MB.bin")
+  expect_is(adlFOS, "adlFileOutputStream")
+  res <- adlFileOutputStreamWrite(adlFOS, binData, 1, 6291456L)
+  expect_null(res)
+  res <- adlFileOutputStreamClose(adlFOS)
+  expect_null(res)
+  # APPEND - test6MB.bin - check
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "tempfolder1/test6MB.bin")
+  expect_is(res, "data.frame")
+  expect_equal(nrow(res), 1)
+  expect_equal(ncol(res), 12)
+  # pathsuffix of a file in getfilestatus will be empty!
+  expect_equal(res$FileStatus.pathSuffix == "", TRUE)
+  expect_equal(res$FileStatus.length, 6291456)
+
+  # READ (OPEN)
+#  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile00.txt", length = 2L, bufferSize = 4194304L)
+#  expect_equal(rawToChar(res), "ab")
+#  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile01.txt", 2L, 2L, 4194304L)
+#  expect_equal(rawToChar(res), "gh")
+
+  # DELETE
+#  res <- azureDataLakeDelete(asc, azureDataLakeAccount, "tempfolder", TRUE)
+#  expect_true(res)
+})

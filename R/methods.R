@@ -326,6 +326,16 @@ on_failure(is_bufferSize) <- function(call, env) {
   "Provide a valid integer bufferSize. e.g., 4194304L, 1048576L, 1024L, 128L"
 }
 
+# --- contentSize
+
+is_contentSize <- function(x) {
+  is.integer(x) && length(x) == 1 && x >= -1
+}
+
+on_failure(is_contentSize) <- function(call, env) {
+  "Provide a valid integer contentSize. e.g., 4194304L, 1048576L, 1024L, 128L"
+}
+
 # --- replication
 
 is_replication <- function(x) {
@@ -432,14 +442,14 @@ as.adlFileOutputStream <- function(x){
   x
 }
 
-on_failure(is.adlFileOutputStream) <- function(call, env) {
-  "Provide a valid adlFileOutputStream. See createAdlFileOutputStream()"
-}
-
 #' @export
 #' @rdname Internal
 is.adlFileOutputStream <- function(x){
   inherits(x, "adlFileOutputStream")
+}
+
+on_failure(is.adlFileOutputStream) <- function(call, env) {
+  "Provide a valid adlFileOutputStream. See createAdlFileOutputStream()"
 }
 
 #' @export
@@ -465,11 +475,5 @@ adlFileOutputStreamCheck <- function(adlFileOutputStream) {
   if (adlFileOutputStream$streamClosed) {
     stop("IOException: Attempting to write to a closed stream")
   }
-
-  if (!missing(adlFileOutputStream$azureActiveContext) && !is.null(adlFileOutputStream$azureActiveContext)) {
-    assert_that(is.azureActiveContext(adlFileOutputStream$azureActiveContext))
-    azureCheckToken(adlFileOutputStream$azureActiveContext)
-  }
-
   return(TRUE)
 }
