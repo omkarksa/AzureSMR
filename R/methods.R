@@ -326,6 +326,16 @@ on_failure(is_bufferSize) <- function(call, env) {
   "Provide a valid integer bufferSize. e.g., 4194304L, 1048576L, 1024L, 128L"
 }
 
+# --- contentSize
+
+is_contentSize <- function(x) {
+  is.integer(x) && length(x) == 1 && x >= -1
+}
+
+on_failure(is_contentSize) <- function(call, env) {
+  "Provide a valid integer contentSize. e.g., 4194304L, 1048576L, 1024L, 128L"
+}
+
 # --- replication
 
 is_replication <- function(x) {
@@ -414,4 +424,57 @@ is_content <- function(x) {
 
 on_failure(is_content) <- function(call, env) {
   "Provide a valid non-null raw content"
+}
+
+#' adlFileOutputStream object.
+#'
+#' Functions for creating and displaying information about adlFileOutputStream objects.
+#'
+#' @param x Object to create, test or print
+#' @param ... Ignored
+#'
+#' @seealso [createAdlFileOutputStream()]
+#' @export
+#' @rdname Internal
+as.adlFileOutputStream <- function(x){
+  if(!is.environment(x)) stop("Expecting an environment as input")
+  class(x) <- "adlFileOutputStream"
+  x
+}
+
+on_failure(as.adlFileOutputStream) <- function(call, env) {
+  "Provide a valid adlFileOutputStream. See createAdlFileOutputStream()"
+}
+
+#' @export
+#' @rdname Internal
+is.adlFileOutputStream <- function(x){
+  inherits(x, "adlFileOutputStream")
+}
+
+#' @export
+print.adlFileOutputStream <- function(x, ...){
+  cat("AzureSMR adlFileOutputStream\n")
+  #cat("Tenant ID :", x$tenantID, "\n")
+  #cat("Subscription ID :", x$subscriptionID, "\n")
+}
+
+#' @export
+str.adlFileOutputStream <- function(object, ...){
+  cat(("AzureSMR adlFileOutputStream with elements:\n"))
+  ls.str(object, all.names = TRUE)
+}
+
+#' Check the timestamp of a token and renew if needed.
+#'
+#' @inheritParams createAdlFileOutputStream
+#' @param adlFileOutputStream the adlFileOutputStream object to check
+#' @family Azure resource functions
+#' @export
+adlFileOutputStreamCheck <- function(adlFileOutputStream) {
+  if (missing(adlFileOutputStream) || is.null(adlFileOutputStream)) return(FALSE)
+  if (adlFileOutputStream$streamClosed) {
+    stop("IOException: Attempting to write to a closed stream")
+  }
+  return(TRUE)
 }

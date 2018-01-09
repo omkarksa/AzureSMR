@@ -3,20 +3,34 @@
 \name{as.azureActiveContext}
 \alias{as.azureActiveContext}
 \alias{is.azureActiveContext}
+\alias{as.adlFileOutputStream}
+\alias{is.adlFileOutputStream}
 \title{azureActiveContext object.}
 \usage{
 as.azureActiveContext(x)
 
 is.azureActiveContext(x)
+
+as.adlFileOutputStream(x)
+
+is.adlFileOutputStream(x)
 }
 \arguments{
+\item{x}{Object to create, test or print}
+
+\item{...}{Ignored}
+
 \item{x}{Object to create, test or print}
 
 \item{...}{Ignored}
 }
 \description{
 Functions for creating and displaying information about azureActiveContext objects.
+
+Functions for creating and displaying information about adlFileOutputStream objects.
 }
 \seealso{
 \code{\link[=createAzureContext]{createAzureContext()}}
+
+\code{\link[=createAdlFileOutputStream]{createAdlFileOutputStream()}}
 }
