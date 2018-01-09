@@ -6,6 +6,9 @@
 \usage{
 adlFileOutputStreamCheck(adlFileOutputStream)
 }
+\arguments{
+\item{adlFileOutputStream}{the adlFileOutputStream object to check}
+}
 \description{
 Check the timestamp of a token and renew if needed.
 }

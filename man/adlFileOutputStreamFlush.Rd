@@ -4,8 +4,8 @@
 \alias{adlFileOutputStreamFlush}
 \title{Flush an adlFileOutputStream.}
 \usage{
-adlFileOutputStreamFlush(adlFileOutputStream, syncFlag = "METADATA",
-  verbose = FALSE)
+adlFileOutputStreamFlush(adlFileOutputStream,
+  syncFlag = syncFlagEnum$METADATA, verbose = FALSE)
 }
 \arguments{
 \item{adlFileOutputStream}{adlFileOutputStream of the file}
@@ -24,6 +24,7 @@ Flush an adlFileOutputStream.
 Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamWrite}},
   \code{\link{azureDataLakeAppendBOS}},
+  \code{\link{azureDataLakeAppendCore}},
   \code{\link{azureDataLakeAppend}},
   \code{\link{azureDataLakeCreate}},
   \code{\link{azureDataLakeDelete}},

@@ -21,6 +21,7 @@ Close an adlFileOutputStream.
 Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamFlush}},
   \code{\link{adlFileOutputStreamWrite}},
   \code{\link{azureDataLakeAppendBOS}},
+  \code{\link{azureDataLakeAppendCore}},
   \code{\link{azureDataLakeAppend}},
   \code{\link{azureDataLakeCreate}},
   \code{\link{azureDataLakeDelete}},
