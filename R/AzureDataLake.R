@@ -258,6 +258,33 @@ azureDataLakeAppend <- function(azureActiveContext, azureDataLakeAccount, relati
   return(NULL)
 }
 
+#' AppendBOS to an existing file.
+#'
+#' @inheritParams setAzureContext
+#' @param azureDataLakeAccount Name of the Azure Data Lake account.
+#' @param relativePath Relative path of a file.
+#' @param verbose Print tracing information (default FALSE).
+#' @return adlFileOutputStream object.
+#' @exception IOException
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+#'
+#' @references \url{https://docs.microsoft.com/en-us/azure/data-lake-store/data-lake-store-data-operations-rest-api#upload-data}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Append_to_a_File}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Buffer_Size}
+#' @seealso \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#append-org.apache.hadoop.fs.Path-int-org.apache.hadoop.util.Progressable-}
+azureDataLakeAppendBOS <- function(azureActiveContext, azureDataLakeAccount, relativePath, verbose = FALSE) {
+  if (!missing(azureActiveContext) && !is.null(azureActiveContext)) {
+    assert_that(is.azureActiveContext(azureActiveContext))
+    azureCheckToken(azureActiveContext)
+  }
+  assert_that(is_storage_account(azureDataLakeAccount))
+  assert_that(is_relativePath(relativePath))
+  adlFOS <- createAdlFileOutputStream(azureActiveContext, azureDataLakeAccount, relativePath, verbose)
+  return(adlFOS)
+}
+
 #' The Core Append API.
 #'
 #' @inheritParams setAzureContext
@@ -311,10 +338,7 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
   if (contentSize == -1) {
     contentSize <- getContentSize(contents)
   }
-  # avoid a zero byte append
-  if (contentSize == 0) {
-    return(NULL)
-  }
+  # allow a zero byte append
   URL <- paste0(
     getAzureDataLakeBasePath(azureDataLakeAccount),
     relativePath,
@@ -421,32 +445,8 @@ azureDataLakeDelete <- function(azureActiveContext, azureDataLakeAccount, relati
   return(resDf$boolean)
 }
 
-#' AppendBOS to an existing file.
-#'
-#' @inheritParams setAzureContext
-#' @param azureDataLakeAccount Name of the Azure Data Lake account.
-#' @param relativePath Relative path of a file.
-#' @param verbose Print tracing information (default FALSE).
-#' @return adlFileOutputStream object.
-#' @exception IOException
-#'
-#' @family Azure Data Lake Store functions
-#' @export
-#'
-#' @references \url{https://docs.microsoft.com/en-us/azure/data-lake-store/data-lake-store-data-operations-rest-api#upload-data}
-#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Append_to_a_File}
-#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Buffer_Size}
-#' @seealso \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#append-org.apache.hadoop.fs.Path-int-org.apache.hadoop.util.Progressable-}
-azureDataLakeAppendBOS <- function(azureActiveContext, azureDataLakeAccount, relativePath, verbose = FALSE) {
-  if (!missing(azureActiveContext) && !is.null(azureActiveContext)) {
-    assert_that(is.azureActiveContext(azureActiveContext))
-    azureCheckToken(azureActiveContext)
-  }
-  assert_that(is_storage_account(azureDataLakeAccount))
-  assert_that(is_relativePath(relativePath))
-  adlFOS <- createAdlFileOutputStream(azureActiveContext, azureDataLakeAccount, relativePath, verbose)
-  return(adlFOS)
-}
+
+
 
 #' Create an adlFileOutputStream.
 #' Create a container (`adlFileOutputStream`) for holding variables used by the Azure Data Lake Store data functions.
