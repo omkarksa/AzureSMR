@@ -4,16 +4,19 @@
 \alias{adlFileOutputStreamWrite}
 \title{Write to an adlFileOutputStream.}
 \usage{
-adlFileOutputStreamWrite(adlFileOutputStream, contents, off, len)
+adlFileOutputStreamWrite(adlFileOutputStream, contents, off, len,
+  verbose = FALSE)
 }
 \arguments{
 \item{adlFileOutputStream}{adlFileOutputStream of the file}
 
 \item{contents}{contents to write to the file}
 
-\item{off}{the start offset in the data}
+\item{off}{the start offset in the data (must be > 1)}
 
 \item{len}{the number of bytes to write}
+
+\item{verbose}{Print tracing information (default FALSE)}
 }
 \value{
 NULL (void)
@@ -22,7 +25,10 @@ NULL (void)
 Write to an adlFileOutputStream.
 }
 \seealso{
-Other Azure Data Lake Store functions: \code{\link{azureDataLakeAppend}},
+Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
+  \code{\link{adlFileOutputStreamFlush}},
+  \code{\link{azureDataLakeAppendBOS}},
+  \code{\link{azureDataLakeAppend}},
   \code{\link{azureDataLakeCreate}},
   \code{\link{azureDataLakeDelete}},
   \code{\link{azureDataLakeGetFileStatus}},

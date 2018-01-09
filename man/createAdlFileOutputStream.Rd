@@ -5,12 +5,14 @@
 \title{Create an adlFileOutputStream.
 Create a container (\code{adlFileOutputStream}) for holding variables used by the Azure Data Lake Store data functions.}
 \usage{
-createAdlFileOutputStream(azureActiveContext, accountFQDN)
+createAdlFileOutputStream(azureActiveContext, accountName, relativePath)
 }
 \arguments{
 \item{azureActiveContext}{A container used for caching variables used by \code{AzureSMR}, created by \code{\link[=createAzureContext]{createAzureContext()}}}
 
-\item{accountFQDN}{the account FDQN}
+\item{accountName}{the account name}
+
+\item{relativePath}{Relative path of a file/directory}
 }
 \value{
 An \code{adlFileOutputStream} object
@@ -20,7 +22,10 @@ Create an adlFileOutputStream.
 Create a container (\code{adlFileOutputStream}) for holding variables used by the Azure Data Lake Store data functions.
 }
 \seealso{
-Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamWrite}},
+Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
+  \code{\link{adlFileOutputStreamFlush}},
+  \code{\link{adlFileOutputStreamWrite}},
+  \code{\link{azureDataLakeAppendBOS}},
   \code{\link{azureDataLakeAppend}},
   \code{\link{azureDataLakeCreate}},
   \code{\link{azureDataLakeDelete}},
