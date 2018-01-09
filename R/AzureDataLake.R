@@ -1,7 +1,7 @@
 
 # Global variables required for this class
 {
-  # create a syncFlagEnum object
+  # create a syncFlagEnum object used by the Azure Data Lake Store functions.
   syncFlagEnum <- list("DATA", "METADATA", "CLOSE", "PIPELINE")
   names(syncFlagEnum) <- syncFlagEnum
 }
@@ -547,11 +547,8 @@ addToBuffer <- function(adlFileOutputStream, contents, off, len) {
   if (len > bufferlen - (cursor - 1)) { # if requesting to copy more than remaining space in buffer
     stop("IllegalArgumentException: invalid buffer copy requested in addToBuffer")
   }
-  # arraycopy
-  # TODO: this is a very costly operation. Need to optimize.
-  for(i in 0:(len-1)) {
-    adlFileOutputStream$buffer[cursor + i] <- contents[off + i]
-  }
+  # optimized arraycopy
+  adlFileOutputStream$buffer[cursor : (cursor + len - 1)] <- contents[off : (off + len - 1)]
   adlFileOutputStream$cursor <- as.integer(cursor + len)
   print(paste0("[DEBUG] addToBuffer(): buffer length: ", getContentSize(adlFileOutputStream$buffer)))
   print(paste0("[DEBUG] adlFileOutputStream$cursor: ", adlFileOutputStream$cursor))
@@ -589,7 +586,7 @@ adlFileOutputStreamFlush <- function(adlFileOutputStream, syncFlag = syncFlagEnu
                              adlFileOutputStream$leaseId, adlFileOutputStream$leaseId, syncFlag, 
                              adlFileOutputStream$remoteCursor,
                              verbose)
-  # TODO: implement - error recovery/retry (?)
+  # TODO: implement - retry/error recovery (?)
   stopWithAzureError(resHttp)
   adlFileOutputStream$remoteCursor <- (adlFileOutputStream$remoteCursor + (adlFileOutputStream$cursor - 1))
   adlFileOutputStream$cursor <- 1L
@@ -613,3 +610,4 @@ adlFileOutputStreamClose <- function(adlFileOutputStream,
   adlFileOutputStream$buffer <- raw(0) # release byte buffer so it can be GC'ed even if app continues to hold reference to stream
   return(NULL)
 }
+
