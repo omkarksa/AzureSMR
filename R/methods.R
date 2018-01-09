@@ -468,6 +468,7 @@ str.adlFileOutputStream <- function(object, ...){
 #' Check the timestamp of a token and renew if needed.
 #'
 #' @inheritParams createAdlFileOutputStream
+#' @param adlFileOutputStream the adlFileOutputStream object to check
 #' @family Azure resource functions
 #' @export
 adlFileOutputStreamCheck <- function(adlFileOutputStream) {
