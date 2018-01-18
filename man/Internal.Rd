@@ -16,13 +16,7 @@ as.adlFileOutputStream(x)
 is.adlFileOutputStream(x)
 }
 \arguments{
-\item{x}{Object to create, test or print}
-
-\item{...}{Ignored}
-
-\item{x}{Object to create, test or print}
-
-\item{...}{Ignored}
+\item{x}{the Object to create, test or print}
 }
 \description{
 Functions for creating and displaying information about azureActiveContext objects.

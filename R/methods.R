@@ -2,8 +2,7 @@
 #'
 #' Functions for creating and displaying information about azureActiveContext objects.
 #'
-#' @param x Object to create, test or print
-#' @param ... Ignored
+#' @param x the Object to create, test or print
 #'
 #' @seealso [createAzureContext()]
 #' @export
@@ -429,9 +428,6 @@ on_failure(is_content) <- function(call, env) {
 #' adlFileOutputStream object.
 #'
 #' Functions for creating and displaying information about adlFileOutputStream objects.
-#'
-#' @param x Object to create, test or print
-#' @param ... Ignored
 #'
 #' @seealso [createAdlFileOutputStream()]
 #' @export
