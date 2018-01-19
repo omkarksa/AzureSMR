@@ -469,8 +469,7 @@ createAdlFileOutputStream <- function(azureActiveContext, accountName, relativeP
   if (!missing(accountName)) azEnv$accountName <- accountName
   if (!missing(relativePath)) azEnv$relativePath <- relativePath
   azEnv$leaseId <- uuid()
-  blockSize <- as.integer(4 * 1024 * 1024)
-  azEnv$blockSize <- blockSize
+  azEnv$blockSize <- as.integer(4 * 1024 * 1024)
   azEnv$buffer <- raw(0)
   # cursors/indices/offsets in R should start from 1 and NOT 0. 
   # Because of this there are many adjustments that need to be done throughout the code!
@@ -575,9 +574,9 @@ adlFileOutputStreamFlush <- function(adlFileOutputStream, syncFlag = syncFlagEnu
     return(NULL)
   }
   # do not send a flush if the last flush updated metadata and there is no data
-  if (adlFileOutputStream$cursor == 1
+  if ((adlFileOutputStream$cursor == 1)
       && adlFileOutputStream$lastFlushUpdateMetadata
-      && syncFlag == syncFlagEnum$METADATA) {
+      && (syncFlag == syncFlagEnum$METADATA)) {
     return(NULL)
   }
   resHttp <- azureDataLakeAppendCore(adlFileOutputStream$azureActiveContext, 

@@ -198,6 +198,42 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   # pathsuffix of a file in getfilestatus will be empty!
   expect_equal(res$FileStatus.pathSuffix == "", TRUE)
   expect_equal(res$FileStatus.length, 6291456)
+  
+  # CREATE
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin", "755")
+  expect_null(res)
+  # **** APPEND - 2MB to test6MBWA.bin
+  binData <- readBin(con = datafile2MB, what = "raw", n = 2097152)
+  adlFOS <- azureDataLakeAppendBOS(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
+  expect_is(adlFOS, "adlFileOutputStream")
+  res <- adlFileOutputStreamWrite(adlFOS, binData, 1, 2097152L)
+  expect_null(res)
+  res <- adlFileOutputStreamClose(adlFOS)
+  expect_null(res)
+  # CHECK - APPEND - 2MB to test6MBWA.bin
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
+  expect_is(res, "data.frame")
+  expect_equal(nrow(res), 1)
+  expect_equal(ncol(res), 12)
+  # pathsuffix of a file in getfilestatus will be empty!
+  expect_equal(res$FileStatus.pathSuffix == "", TRUE)
+  expect_equal(res$FileStatus.length, 2097152)
+  # **** APPEND - 4MB to test6MBWA.bin
+  binData <- readBin(con = datafile4MB, what = "raw", n = 4194304)
+  adlFOS <- azureDataLakeAppendBOS(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
+  expect_is(adlFOS, "adlFileOutputStream")
+  res <- adlFileOutputStreamWrite(adlFOS, binData, 1, 4194304L)
+  expect_null(res)
+  res <- adlFileOutputStreamClose(adlFOS)
+  expect_null(res)
+  # CHECK - APPEND - 4MB to test6MBWA.bin
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
+  expect_is(res, "data.frame")
+  expect_equal(nrow(res), 1)
+  expect_equal(ncol(res), 12)
+  # pathsuffix of a file in getfilestatus will be empty!
+  expect_equal(res$FileStatus.pathSuffix == "", TRUE)
+  expect_equal(res$FileStatus.length, 6291456)
 
   # READ (OPEN)
 #  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile00.txt", length = 2L, bufferSize = 4194304L)
