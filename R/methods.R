@@ -461,7 +461,7 @@ str.adlFileOutputStream <- function(object, ...){
   ls.str(object, all.names = TRUE)
 }
 
-#' Check the timestamp of a token and renew if needed.
+#' Check for proper adlFileOutputStream.
 #'
 #' @inheritParams createAdlFileOutputStream
 #' @param adlFileOutputStream the adlFileOutputStream object to check
@@ -471,6 +471,57 @@ adlFileOutputStreamCheck <- function(adlFileOutputStream) {
   if (missing(adlFileOutputStream) || is.null(adlFileOutputStream)) return(FALSE)
   if (adlFileOutputStream$streamClosed) {
     stop("IOException: Attempting to write to a closed stream")
+  }
+  return(TRUE)
+}
+
+
+#' adlFileInputStream object.
+#'
+#' Functions for creating and displaying information about adlFileInputStream objects.
+#'
+#' @seealso [createAdlFileInputStream()]
+#' @export
+#' @rdname Internal
+as.adlFileInputStream <- function(x){
+  if(!is.environment(x)) stop("Expecting an environment as input")
+  class(x) <- "adlFileInputStream"
+  x
+}
+
+#' @export
+#' @rdname Internal
+is.adlFileInputStream <- function(x){
+  inherits(x, "adlFileInputStream")
+}
+
+on_failure(is.adlFileInputStream) <- function(call, env) {
+  "Provide a valid adlFileInputStream. See createAdlFileInputStream()"
+}
+
+#' @export
+print.adlFileInputStream <- function(x, ...){
+  cat("AzureSMR adlFileInputStream\n")
+  #cat("Tenant ID :", x$tenantID, "\n")
+  #cat("Subscription ID :", x$subscriptionID, "\n")
+}
+
+#' @export
+str.adlFileInputStream <- function(object, ...){
+  cat(("AzureSMR adlFileInputStream with elements:\n"))
+  ls.str(object, all.names = TRUE)
+}
+
+#' Check for proper adlFileInputStream.
+#'
+#' @inheritParams createAdlFileInputStream
+#' @param adlFileInputStream the adlFileInputStream object to check
+#' @family Azure resource functions
+#' @export
+adlFileInputStreamCheck <- function(adlFileInputStream) {
+  if (missing(adlFileInputStream) || is.null(adlFileInputStream)) return(FALSE)
+  if (adlFileInputStream$streamClosed) {
+    stop("IOException: Attempting to read from a closed stream")
   }
   return(TRUE)
 }

@@ -32,7 +32,9 @@ Delete a file/directory.
 
 \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#delete-org.apache.hadoop.fs.Path-boolean-}
 
-Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
+Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
+  \code{\link{adlFileInputStreamRead}},
+  \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamFlush}},
   \code{\link{adlFileOutputStreamWrite}},
   \code{\link{azureDataLakeAppendBOS}},
@@ -42,6 +44,9 @@ Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
   \code{\link{azureDataLakeGetFileStatus}},
   \code{\link{azureDataLakeListStatus}},
   \code{\link{azureDataLakeMkdirs}},
+  \code{\link{azureDataLakeOpenBIS}},
+  \code{\link{azureDataLakeReadCore}},
   \code{\link{azureDataLakeRead}},
+  \code{\link{createAdlFileInputStream}},
   \code{\link{createAdlFileOutputStream}}
 }

@@ -130,6 +130,10 @@ getAzureDataLakeApiVersion <- function() {
   return("&api-version=2016-11-01")
 }
 
+getAzureDataLakeDefaultBufferSize <- function() {
+  return(as.integer(4 * 1024 * 1024))
+}
+
 callAzureDataLakeApi <- function(url, verb = "GET", azureActiveContext,
                                 content = raw(0), contenttype = "text/plain; charset=UTF-8",
                                 verbose = FALSE) {

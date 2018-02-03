@@ -25,7 +25,9 @@ Create an adlFileOutputStream.
 Create a container (\code{adlFileOutputStream}) for holding variables used by the Azure Data Lake Store data functions.
 }
 \seealso{
-Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
+Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
+  \code{\link{adlFileInputStreamRead}},
+  \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamFlush}},
   \code{\link{adlFileOutputStreamWrite}},
   \code{\link{azureDataLakeAppendBOS}},
@@ -36,5 +38,8 @@ Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
   \code{\link{azureDataLakeGetFileStatus}},
   \code{\link{azureDataLakeListStatus}},
   \code{\link{azureDataLakeMkdirs}},
-  \code{\link{azureDataLakeRead}}
+  \code{\link{azureDataLakeOpenBIS}},
+  \code{\link{azureDataLakeReadCore}},
+  \code{\link{azureDataLakeRead}},
+  \code{\link{createAdlFileInputStream}}
 }

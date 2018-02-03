@@ -25,7 +25,9 @@ NULL (void)
 Write to an adlFileOutputStream.
 }
 \seealso{
-Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
+Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
+  \code{\link{adlFileInputStreamRead}},
+  \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamFlush}},
   \code{\link{azureDataLakeAppendBOS}},
   \code{\link{azureDataLakeAppendCore}},
@@ -35,6 +37,9 @@ Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
   \code{\link{azureDataLakeGetFileStatus}},
   \code{\link{azureDataLakeListStatus}},
   \code{\link{azureDataLakeMkdirs}},
+  \code{\link{azureDataLakeOpenBIS}},
+  \code{\link{azureDataLakeReadCore}},
   \code{\link{azureDataLakeRead}},
+  \code{\link{createAdlFileInputStream}},
   \code{\link{createAdlFileOutputStream}}
 }

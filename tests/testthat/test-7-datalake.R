@@ -158,6 +158,13 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   # pathsuffix of a file in getfilestatus will be empty!
   expect_equal(res$FileStatus.pathSuffix == "", TRUE)
   expect_equal(res$FileStatus.length, 2097152)
+  # OPEN(READ) - test2MB.bin
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test2MB.bin")
+  buffer <- raw(2097152)
+  res <- adlFileInputStreamRead(adlFIS, 0L, buffer, 1L, 2097152L, TRUE)
+  expect_equal(res[[1]], 2097152)
+  expect_equal(res[[2]], binData)
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
 
   # CREATE
   res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test4MB.bin", "755")
@@ -178,6 +185,13 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   # pathsuffix of a file in getfilestatus will be empty!
   expect_equal(res$FileStatus.pathSuffix == "", TRUE)
   expect_equal(res$FileStatus.length, 4194304)
+  # OPEN(READ) - test4MB.bin
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test4MB.bin")
+  buffer <- raw(4194304)
+  res <- adlFileInputStreamRead(adlFIS, 0L, buffer, 1L, 4194304L, TRUE)
+  expect_equal(res[[1]], 4194304)
+  expect_equal(res[[2]], binData)
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
 
   # CREATE
   res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test6MB.bin", "755")
@@ -198,7 +212,14 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   # pathsuffix of a file in getfilestatus will be empty!
   expect_equal(res$FileStatus.pathSuffix == "", TRUE)
   expect_equal(res$FileStatus.length, 6291456)
-  
+  # OPEN(READ) - test6MB.bin
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test6MB.bin")
+  buffer <- raw(6291456)
+  res <- adlFileInputStreamRead(adlFIS, 0L, buffer, 1L, 6291456L, TRUE)
+  expect_equal(res[[1]], 6291456)
+  expect_equal(res[[2]], binData)
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
+
   # CREATE
   res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin", "755")
   expect_null(res)
@@ -234,14 +255,22 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   # pathsuffix of a file in getfilestatus will be empty!
   expect_equal(res$FileStatus.pathSuffix == "", TRUE)
   expect_equal(res$FileStatus.length, 6291456)
-
-  # READ (OPEN)
-#  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile00.txt", length = 2L, bufferSize = 4194304L)
-#  expect_equal(rawToChar(res), "ab")
-#  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile01.txt", 2L, 2L, 4194304L)
-#  expect_equal(rawToChar(res), "gh")
+  # OPEN(READ) - test6MBWA.bin
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
+  buffer <- raw(6291456)
+  res <- adlFileInputStreamRead(adlFIS, 0L, buffer, 1L, 6291456L, TRUE)
+  expect_equal(res[[1]], 6291456)
+  expect_equal(res[[2]][2097153:6291456], binData)
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
+  # OPEN(READ) - test6MBWA.bin- check with offset
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
+  buffer <- raw(6291456)
+  res <- adlFileInputStreamRead(adlFIS, 2097152L, buffer, 2097153L, 4194304L, TRUE)
+  expect_equal(res[[1]], 4194304)
+  expect_equal(res[[2]][2097153:6291456], binData)
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
 
   # DELETE
-#  res <- azureDataLakeDelete(asc, azureDataLakeAccount, "tempfolder", TRUE)
-#  expect_true(res)
+  res <- azureDataLakeDelete(asc, azureDataLakeAccount, "tempfolder1", TRUE)
+  expect_true(res)
 })

@@ -16,7 +16,8 @@ If successful, returns TRUE
 Display device code flow message to user.
 }
 \seealso{
-Other Azure resource functions: \code{\link{adlFileOutputStreamCheck}},
+Other Azure resource functions: \code{\link{adlFileInputStreamCheck}},
+  \code{\link{adlFileOutputStreamCheck}},
   \code{\link{azureAuthenticateOnAuthType}},
   \code{\link{azureAuthenticate}},
   \code{\link{azureCheckToken}},

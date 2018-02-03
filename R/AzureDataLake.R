@@ -315,7 +315,6 @@ azureDataLakeAppendBOS <- function(azureActiveContext, azureDataLakeAccount, rel
 #' @exception IOException
 #' 
 #' @family Azure Data Lake Store functions
-#' @export
 #' 
 #' @references \url{https://docs.microsoft.com/en-us/azure/data-lake-store/data-lake-store-data-operations-rest-api#upload-data}
 #' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Append_to_a_File}
@@ -364,7 +363,7 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
 #' @param relativePath Relative path of a file/directory.
 #' @param offset Provide the offset to read from.
 #' @param length Provide length of data to read.
-#' @param bufferSize Size of the buffer to be used.
+#' @param bufferSize Size of the buffer to be used. (not honoured).
 #' @param verbose Print tracing information (default FALSE).
 #' @return raw contents of the file.
 #' @exception IOException
@@ -378,7 +377,77 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
 #' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Length}
 #' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Buffer_Size}
 #' @seealso \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#open-org.apache.hadoop.fs.Path-int-}
-azureDataLakeRead <- function(azureActiveContext, azureDataLakeAccount, relativePath, offset, length, bufferSize, verbose = FALSE) {
+azureDataLakeRead <- function(azureActiveContext, 
+                              azureDataLakeAccount, relativePath, 
+                              offset, length, bufferSize, 
+                              verbose = FALSE) {
+  resHttp <- azureDataLakeReadCore(azureActiveContext, 
+                                   azureDataLakeAccount, relativePath, 
+                                   offset, length, bufferSize, 
+                                   verbose)
+  stopWithAzureError(resHttp)
+  resRaw <- content(resHttp, "raw", encoding = "UTF-8")
+  return(resRaw)
+}
+
+#' Open a file and return an adlFileInputStream
+#'
+#' @inheritParams setAzureContext
+#' @param azureDataLakeAccount Name of the Azure Data Lake account.
+#' @param relativePath Relative path of a file/directory.
+#' @param bufferSize Size of the buffer to be used. (not honoured).
+#' @param verbose Print tracing information (default FALSE).
+#' @return an object of adlFileInputStream.
+#' @exception IOException
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+#'
+#' @references \url{https://docs.microsoft.com/en-us/azure/data-lake-store/data-lake-store-data-operations-rest-api#read-data}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Open_and_Read_a_File}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Offset}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Length}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Buffer_Size}
+#' @seealso \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#open-org.apache.hadoop.fs.Path-int-}
+azureDataLakeOpenBIS <- function(azureActiveContext, azureDataLakeAccount, 
+                                 relativePath, bufferSize, 
+                                 verbose = FALSE) {
+  if (!missing(azureActiveContext) && !is.null(azureActiveContext)) {
+    assert_that(is.azureActiveContext(azureActiveContext))
+    azureCheckToken(azureActiveContext)
+  }
+  assert_that(is_storage_account(azureDataLakeAccount))
+  assert_that(is_relativePath(relativePath))
+  if (!missing(bufferSize) && !is.null(bufferSize)) assert_that(is_bufferSize(bufferSize))
+  adlFIS <- createAdlFileInputStream(azureActiveContext, azureDataLakeAccount, relativePath, verbose)
+
+  return(adlFIS)
+}
+
+#' Core function to open and read a file.
+#'
+#' @inheritParams setAzureContext
+#' @param azureDataLakeAccount Name of the Azure Data Lake account.
+#' @param relativePath Relative path of a file/directory.
+#' @param offset Provide the offset to read from.
+#' @param length Provide length of data to read.
+#' @param bufferSize Size of the buffer to be used. (not honoured).
+#' @param verbose Print tracing information (default FALSE).
+#' @return raw contents of the file.
+#' @exception IOException
+#'
+#' @family Azure Data Lake Store functions
+#'
+#' @references \url{https://docs.microsoft.com/en-us/azure/data-lake-store/data-lake-store-data-operations-rest-api#read-data}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Open_and_Read_a_File}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Offset}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Length}
+#' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Buffer_Size}
+#' @seealso \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#open-org.apache.hadoop.fs.Path-int-}
+azureDataLakeReadCore <- function(azureActiveContext, 
+                                  azureDataLakeAccount, relativePath, 
+                                  offset, length, bufferSize = 4194304L, 
+                                  verbose = FALSE) {
   if (!missing(azureActiveContext) && !is.null(azureActiveContext)) {
     assert_that(is.azureActiveContext(azureActiveContext))
     azureCheckToken(azureActiveContext)
@@ -400,9 +469,7 @@ azureDataLakeRead <- function(azureActiveContext, azureDataLakeAccount, relative
   resHttp <- callAzureDataLakeApi(URL,
                                   azureActiveContext = azureActiveContext,
                                   verbose = verbose)
-  stopWithAzureError(resHttp)
-  resRaw <- content(resHttp, "raw", encoding = "UTF-8")
-  return(resRaw)
+  return(resHttp)
 }
 
 #' Delete a file/directory.
@@ -469,7 +536,7 @@ createAdlFileOutputStream <- function(azureActiveContext, accountName, relativeP
   if (!missing(accountName)) azEnv$accountName <- accountName
   if (!missing(relativePath)) azEnv$relativePath <- relativePath
   azEnv$leaseId <- uuid()
-  azEnv$blockSize <- as.integer(4 * 1024 * 1024)
+  azEnv$blockSize <- getAzureDataLakeDefaultBufferSize()
   azEnv$buffer <- raw(0)
   # cursors/indices/offsets in R should start from 1 and NOT 0. 
   # Because of this there are many adjustments that need to be done throughout the code!
@@ -610,3 +677,117 @@ adlFileOutputStreamClose <- function(adlFileOutputStream,
   return(NULL)
 }
 
+
+#' Create an createAdlFileInputStream
+#' Create a container (`adlFileInputStream`) for holding variables used by the Azure Data Lake Store data functions.
+#'
+#' @inheritParams setAzureContext
+#' @param accountName the account name
+#' @param relativePath Relative path of a file/directory
+#' @param verbose Print tracing information (default FALSE).
+#' @return An `adlFileOutputStream` object
+#'
+#' @family Azure Data Lake Store functions
+createAdlFileInputStream <- function(azureActiveContext, accountName, relativePath, verbose = FALSE) {
+  azEnv <- new.env(parent = emptyenv())
+  azEnv <- as.adlFileInputStream(azEnv)
+  list2env(
+    list(azureActiveContext = "", accountName = "", relativePath = ""),
+    envir = azEnv
+  )
+  if (!missing(azureActiveContext)) azEnv$azureActiveContext <- azureActiveContext
+  if (!missing(accountName)) azEnv$accountName <- accountName
+  if (!missing(relativePath)) azEnv$relativePath <- relativePath
+  azEnv$directoryEntry <- azureDataLakeGetFileStatus(azureActiveContext, accountName, relativePath, verbose)
+  print(paste0("[DEBUG] createAdlFileInputStream(): size of file: ", azEnv$directoryEntry$FileStatus.length))
+  if(azEnv$directoryEntry$FileStatus.type == "DIRECTORY") {
+    msg <- paste0("ADLException: relativePath is not a file: ", relativePath)
+    stop(msg)
+  }
+  azEnv$sessionId <- uuid()
+  azEnv$blockSize <- getAzureDataLakeDefaultBufferSize()
+  azEnv$buffer <- raw(0)
+  # cursors/indices/offsets in R should start from 1 and NOT 0. 
+  # Because of this there are many adjustments that need to be done throughout the code!
+  azEnv$fCursor <- 1L # cursor of buffer within file - offset of next byte to read from remote server
+  azEnv$bCursor <- 1L # cursor of read within buffer - offset of next byte to be returned from buffer
+  azEnv$limit <- 1L # offset of next byte to be read into buffer from service (i.e., upper marker+1 of valid bytes in buffer)
+  azEnv$streamClosed <- FALSE
+  
+  return(azEnv)
+}
+
+#' Read an adlFileInputStream.
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @param position position in file to read from (starts from zero)
+#' @param buffer raw buffer to read into
+#' @param offset offset into the byte buffer at which to read the data into
+#' @param length number of bytes to read
+#' @param verbose Print tracing information (default FALSE)
+#' @return list that contains number of bytes read and the `buffer`
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamRead <- function(adlFileInputStream, 
+                                   position, buffer, offset, length, 
+                                   verbose = FALSE) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+  if (!is.null(adlFileInputStream$azureActiveContext)) {
+    assert_that(is.azureActiveContext(adlFileInputStream$azureActiveContext))
+    azureCheckToken(adlFileInputStream$azureActiveContext)
+  }
+  assert_that(is_content(buffer))
+
+  if (position < 0) {
+    stop("IllegalArgumentException: attempting to read from negative offset")
+  }
+  if (position >= adlFileInputStream$directoryEntry$FileStatus.length) {
+    return -1;  # Hadoop prefers -1 to EOFException
+  }
+  if (is.null(buffer)) {
+    stop("IllegalArgumentException: null byte array passed in to read() method")
+  }
+  if (offset < 1) {
+    stop("IllegalArgumentException: offset less than 1")
+  }
+  if (offset >= getContentSize(buffer)) {
+    stop("IllegalArgumentException: offset greater than length of array")
+  }
+  if (length < 0) {
+    stop("IllegalArgumentException: requested read length is less than zero")
+  }
+  if (length > (getContentSize(buffer) - (offset - 1))) {
+    stop("IllegalArgumentException: requested read length is more than will fit after requested offset in buffer")
+  }
+
+  resHttp <- azureDataLakeReadCore(adlFileInputStream$azureActiveContext, 
+                    adlFileInputStream$accountName, adlFileInputStream$relativePath, 
+                    position, length, 
+                    verbose = verbose)
+  stopWithAzureError(resHttp)
+  resRaw <- content(resHttp, "raw", encoding = "UTF-8")
+  resRawLen <- getContentSize(resRaw)
+  buffer[offset:(offset + length - 1)] <- resRaw[1:resRawLen]
+  res <- list(resRawLen, buffer)
+  return(res)
+}
+
+#' Close an adlFileInputStream.
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @param verbose Print tracing information (default FALSE)
+#' @return NULL (void)
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamClose <- function(adlFileInputStream,
+                                     verbose = FALSE) {
+  if(adlFileInputStream$streamClosed) return(NULL) # Return silently upon multiple closes
+  adlFileInputStream$streamClosed <- TRUE
+  adlFileInputStream$buffer <- raw(0) # release byte buffer so it can be GC'ed even if app continues to hold reference to stream
+  return(NULL)
+}

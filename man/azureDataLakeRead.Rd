@@ -18,7 +18,7 @@ azureDataLakeRead(azureActiveContext, azureDataLakeAccount, relativePath,
 
 \item{length}{Provide length of data to read.}
 
-\item{bufferSize}{Size of the buffer to be used.}
+\item{bufferSize}{Size of the buffer to be used. (not honoured).}
 
 \item{verbose}{Print tracing information (default FALSE).}
 }
@@ -42,7 +42,9 @@ Open and read a file.
 
 \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#open-org.apache.hadoop.fs.Path-int-}
 
-Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
+Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
+  \code{\link{adlFileInputStreamRead}},
+  \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamFlush}},
   \code{\link{adlFileOutputStreamWrite}},
   \code{\link{azureDataLakeAppendBOS}},
@@ -53,5 +55,8 @@ Other Azure Data Lake Store functions: \code{\link{adlFileOutputStreamClose}},
   \code{\link{azureDataLakeGetFileStatus}},
   \code{\link{azureDataLakeListStatus}},
   \code{\link{azureDataLakeMkdirs}},
+  \code{\link{azureDataLakeOpenBIS}},
+  \code{\link{azureDataLakeReadCore}},
+  \code{\link{createAdlFileInputStream}},
   \code{\link{createAdlFileOutputStream}}
 }
