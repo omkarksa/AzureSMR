@@ -375,6 +375,16 @@ on_failure(is_length) <- function(call, env) {
   "Provide a valid integer length that is >=0. e.g., 4194304L, 134217728L"
 }
 
+# --- position (remote file cursor)
+
+is_position <- function(x) {
+  is.integer(x) && x >= 0
+}
+
+on_failure(is_position) <- function(call, env) {
+  "Provide a valid integer position that is >=0. e.g., 4194304L, 134217728L"
+}
+
 # --- auth type
 
 is_authType <- function(x) {

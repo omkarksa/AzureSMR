@@ -53,8 +53,17 @@ Create and write to a file.
 
 \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#create-org.apache.hadoop.fs.Path-org.apache.hadoop.fs.permission.FsPermission-boolean-int-short-long-org.apache.hadoop.util.Progressable-}
 
-Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
+Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamAvailable}},
+  \code{\link{adlFileInputStreamClose}},
+  \code{\link{adlFileInputStreamGetPos}},
+  \code{\link{adlFileInputStreamLength}},
+  \code{\link{adlFileInputStreamMarkSupported}},
+  \code{\link{adlFileInputStreamMark}},
+  \code{\link{adlFileInputStreamReadBuffered}},
   \code{\link{adlFileInputStreamRead}},
+  \code{\link{adlFileInputStreamReset}},
+  \code{\link{adlFileInputStreamSeek}},
+  \code{\link{adlFileInputStreamSkip}},
   \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamFlush}},
   \code{\link{adlFileOutputStreamWrite}},
@@ -69,5 +78,6 @@ Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
   \code{\link{azureDataLakeReadCore}},
   \code{\link{azureDataLakeRead}},
   \code{\link{createAdlFileInputStream}},
-  \code{\link{createAdlFileOutputStream}}
+  \code{\link{createAdlFileOutputStream}},
+  \code{\link{readFromService}}
 }

@@ -18,7 +18,16 @@ NULL (void)
 Close an adlFileInputStream.
 }
 \seealso{
-Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamRead}},
+Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamAvailable}},
+  \code{\link{adlFileInputStreamGetPos}},
+  \code{\link{adlFileInputStreamLength}},
+  \code{\link{adlFileInputStreamMarkSupported}},
+  \code{\link{adlFileInputStreamMark}},
+  \code{\link{adlFileInputStreamReadBuffered}},
+  \code{\link{adlFileInputStreamRead}},
+  \code{\link{adlFileInputStreamReset}},
+  \code{\link{adlFileInputStreamSeek}},
+  \code{\link{adlFileInputStreamSkip}},
   \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamFlush}},
   \code{\link{adlFileOutputStreamWrite}},
@@ -34,5 +43,6 @@ Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamRead}},
   \code{\link{azureDataLakeReadCore}},
   \code{\link{azureDataLakeRead}},
   \code{\link{createAdlFileInputStream}},
-  \code{\link{createAdlFileOutputStream}}
+  \code{\link{createAdlFileOutputStream}},
+  \code{\link{readFromService}}
 }

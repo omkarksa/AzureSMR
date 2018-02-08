@@ -34,8 +34,17 @@ List the statuses of the files/directories in the given path.
 
 \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#listStatus-org.apache.hadoop.fs.Path-}
 
-Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
+Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamAvailable}},
+  \code{\link{adlFileInputStreamClose}},
+  \code{\link{adlFileInputStreamGetPos}},
+  \code{\link{adlFileInputStreamLength}},
+  \code{\link{adlFileInputStreamMarkSupported}},
+  \code{\link{adlFileInputStreamMark}},
+  \code{\link{adlFileInputStreamReadBuffered}},
   \code{\link{adlFileInputStreamRead}},
+  \code{\link{adlFileInputStreamReset}},
+  \code{\link{adlFileInputStreamSeek}},
+  \code{\link{adlFileInputStreamSkip}},
   \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamFlush}},
   \code{\link{adlFileOutputStreamWrite}},
@@ -50,5 +59,6 @@ Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
   \code{\link{azureDataLakeReadCore}},
   \code{\link{azureDataLakeRead}},
   \code{\link{createAdlFileInputStream}},
-  \code{\link{createAdlFileOutputStream}}
+  \code{\link{createAdlFileOutputStream}},
+  \code{\link{readFromService}}
 }

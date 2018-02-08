@@ -331,9 +331,9 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
   }
   assert_that(is_storage_account(azureDataLakeAccount))
   assert_that(is_relativePath(relativePath))
-  if (!missing(bufferSize) && !is.null(bufferSize)) assert_that(is_bufferSize(bufferSize))
+  assert_that(is_bufferSize(bufferSize))
   assert_that(is_content(contents))
-  if (!missing(contentSize) && !is.null(contentSize)) assert_that(is_contentSize(contentSize))
+  assert_that(is_contentSize(contentSize))
   if (contentSize == -1) {
     contentSize <- getContentSize(contents)
   }
@@ -713,7 +713,7 @@ createAdlFileInputStream <- function(azureActiveContext, accountName, relativePa
   azEnv$bCursor <- 1L # cursor of read within buffer - offset of next byte to be returned from buffer
   azEnv$limit <- 1L # offset of next byte to be read into buffer from service (i.e., upper marker+1 of valid bytes in buffer)
   azEnv$streamClosed <- FALSE
-  
+
   return(azEnv)
 }
 
@@ -736,11 +736,10 @@ adlFileInputStreamRead <- function(adlFileInputStream,
     assert_that(is.adlFileInputStream(adlFileInputStream))
     adlFileInputStreamCheck(adlFileInputStream)
   }
-  if (!is.null(adlFileInputStream$azureActiveContext)) {
-    assert_that(is.azureActiveContext(adlFileInputStream$azureActiveContext))
-    azureCheckToken(adlFileInputStream$azureActiveContext)
-  }
+  assert_that(is_position(position))
   assert_that(is_content(buffer))
+  assert_that(is_offset(offset))
+  assert_that(is_length(length))
 
   if (position < 0) {
     stop("IllegalArgumentException: attempting to read from negative offset")
@@ -776,6 +775,238 @@ adlFileInputStreamRead <- function(adlFileInputStream,
   return(res)
 }
 
+#' Buffered read an adlFileInputStream.
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @param buffer raw buffer to read into
+#' @param offset offset into the byte buffer at which to read the data into
+#' @param length number of bytes to read
+#' @param verbose Print tracing information (default FALSE)
+#' @return list that contains number of bytes read and the `buffer`
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamReadBuffered <- function(adlFileInputStream, 
+                                   buffer, offset, length, 
+                                   verbose = FALSE) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+  if (!is.null(adlFileInputStream$azureActiveContext)) {
+    assert_that(is.azureActiveContext(adlFileInputStream$azureActiveContext))
+    azureCheckToken(adlFileInputStream$azureActiveContext)
+  }
+  assert_that(is_content(buffer))
+  assert_that(is_offset(offset))
+  assert_that(is_length(length))
+
+  if (offset < 1L || length < 0L || length > getContentSize(buffer) - offset - 1) {
+    stop("IndexOutOfBoundsException")
+  }
+  if (length == 0) {
+    res <- list(0, buffer)
+    return(res)
+  }
+
+  #If buffer is empty, then fill the buffer. If EOF, then return -1
+  if (adlFileInputStream$bCursor == adlFileInputStream$limit) {
+    if (readFromService(adlFileInputStream) < 0) {
+      res <- list(-1, buffer)
+      return(res)
+    }
+  }
+
+  bytesRemaining <- (adlFileInputStream$limit - adlFileInputStream$bCursor)
+  limits <- c(length, bytesRemaining)
+  bytesToRead <- which.min(limits)
+  buffer[offset:(offset + bytesToRead)] <- 
+    adlFileInputStream$buffer[adlFileInputStream$bCursor:(adlFileInputStream$bCursor + bytesToRead)]
+  adlFileInputStream$bCursor <- adlFileInputStream$bCursor + bytesToRead
+  res <- list(bytesToRead, buffer)
+  return(res)
+}
+
+#' Read from service attempts to read `blocksize` bytes from service.
+#' Returns how many bytes are actually read, could be less than blocksize.
+#'
+#' @param adlFileInputStream the `adlFileInputStream` object to read from
+#' @param verbose Print tracing information (default FALSE)
+#' @return number of bytes actually read
+#' 
+#' @family Azure Data Lake Store functions
+readFromService <- function(adlFileInputStream, verbose = FALSE) {
+  if (adlFileInputStream$bCursor < adlFileInputStream$limit) return(0) #if there's still unread data in the buffer then dont overwrite it At or past end of file
+  if (adlFileInputStream$fCursor >= adlFileInputStream$directoryEntry$FileStatus.length) return(-1)
+  if (adlFileInputStream$directoryEntry$FileStatus.length <= adlFileInputStream$blocksize)
+    return(slurpFullFile(adlFileInputStream))
+
+  #reset buffer to initial state - i.e., throw away existing data
+  adlFileInputStream$bCursor <- 1L
+  adlFileInputStream$limit <- 1L
+  if (is.null(adlFileInputStream$buffer)) adlFileInputStream$buffer <- raw(getAzureDataLakeDefaultBufferSize())
+
+  resHttp <- azureDataLakeReadCore(adlFileInputStream$azureActiveContext, 
+                                   adlFileInputStream$accountName, adlFileInputStream$relativePath, 
+                                   adlFileInputStream$fCursor, adlFileInputStream$blocksize, 
+                                   verbose = verbose)
+  stopWithAzureError(resHttp)
+  data <- content(resHttp, "raw", encoding = "UTF-8")
+  bytesRead <- getContentSize(data)
+  adlFileInputStream$buffer[1:bytesRead] <- data[1:bytesRead]
+  adlFileInputStream$limit <- adlFileInputStream$limit + bytesRead
+  adlFileInputStream$fCursor <- adlFileInputStream$cursor + bytesRead
+  return(bytesRead)
+}
+
+#' Reads the whole file into buffer. Useful when reading small files.
+#'
+#' @param adlFileInputStream the adlFileInputStream object to read from
+#' @param verbose Print tracing information (default FALSE)
+#' @return number of bytes actually read
+slurpFullFile <- function(adlFileInputStream, verbose = FALSE) {
+  if (is.null(adlFileInputStream$buffer)) {
+    blocksize <- adlFileInputStream$directoryEntry$FileStatus.length
+    buffer <- raw(adlFileInputStream$directoryEntry$FileStatus.length)
+  }
+
+  #reset buffer to initial state - i.e., throw away existing data
+  adlFileInputStream$bCursor <- adlFileInputStreamGetPos(adlFileInputStream);  # preserve current file offset (may not be 0 if app did a seek before first read)
+  adlFileInputStream$limit <- 1L
+  adlFileInputStream$fCursor <- 1L  # read from beginning
+
+  resHttp <- azureDataLakeReadCore(adlFileInputStream$azureActiveContext, 
+                                   adlFileInputStream$accountName, adlFileInputStream$relativePath, 
+                                   adlFileInputStream$fCursor, adlFileInputStream$directoryEntry$FileStatus.length, 
+                                   verbose = verbose)
+  stopWithAzureError(resHttp)
+  resRaw <- content(resHttp, "raw", encoding = "UTF-8")
+  resRawLen <- getContentSize(resRaw)
+}
+
+#' Seek to given position in stream.
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @param n position to seek to
+#' @return NULL (void)
+#' @exception IOException if there is an error
+#' @exception EOFException if attempting to seek past end of file
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamSeek <- function(adlFileInputStream, n) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
+  if (adlFileInputStream$streamClosed) stop("IOException: attempting to seek into a closed stream")
+  if (n<0) stop("EOFException: Cannot seek to before the beginning of file")
+  if (n>adlFileInputStream$directoryEntry$FileStatus.length) stop("EOFExceptionCannot: seek past end of file")
+
+  if (n>=adlFileInputStream$fCursor-adlFileInputStream$limit && n<=adlFileInputStream$fCursor) { # within buffer
+    adlFileInputStream$bCursor <- (n-(adlFileInputStream$fCursor-adlFileInputStream$limit));
+    return;
+  }
+
+  # next read will read from here
+  adlFileInputStream$fCursor = n
+
+  #invalidate buffer
+  adlFileInputStream$limit = 0;
+  adlFileInputStream$bCursor = 0;
+}
+
+#' Skip to given position in stream.
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @param n position to seek to
+#' @return NULL
+#' @exception IOException if there is an error
+#' @exception EOFException if attempting to seek past end of file
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamSkip <- function(adlFileInputStream, n) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
+  if (adlFileInputStream$streamClosed) stop("IOException: attempting to seek into a closed stream")
+  currentPos <- adlFileInputStreamGetPos(adlFileInputStream)
+  newPos <- (currentPos + n)
+  if (newPos < 0) {
+    newPos <- 0
+    n <- (newPos - currentPos)
+  }
+  if (newPos > adlFileInputStream$directoryEntry$FileStatus.length) {
+    newPos <- adlFileInputStream$directoryEntry$FileStatus.length
+    n <- newPos - currentPos
+  }
+  seek(newPos)
+  return(n)
+}
+
+#' returns the remaining number of bytes available to read from the buffer, without having to call
+#' the server
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @return the number of bytes availabel
+#' @exception IOException throws `ADLException`` if call fails
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamAvailable <- function(adlFileInputStream) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
+  if (adlFileInputStream$streamClosed) stop("IOException: attempting to call available() on a closed stream")
+  return(adlFileInputStream$limit - adlFileInputStream$bCursor)
+}
+
+#' Returns the length of the file that this stream refers to. Note that the length returned is the length
+#' as of the time the Stream was opened. Specifically, if there have been subsequent appends to the file,
+#' they wont be reflected in the returned length.
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @return length of the file.
+#' @exception IOException if the stream is closed
+#' 
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamLength <- function(adlFileInputStream) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
+  if (adlFileInputStream$streamClosed) stop("IOException: attempting to call length() on a closed stream")
+  return(adlFileInputStream$directoryEntry$FileStatus.length)
+}
+
+#' gets the position of the cursor within the file
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @return position of the cursor
+#' @exception IOException
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamGetPos <- function(adlFileInputStream) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
+  if(adlFileInputStream$streamClosed) {
+    stop("IOException: attempting to call getPos() on a closed stream")
+  }
+  return(adlFileInputStream$fCursor - adlFileInputStream$limit + adlFileInputStream$bCursor)
+}
+
 #' Close an adlFileInputStream.
 #'
 #' @param adlFileInputStream adlFileInputStream of the file
@@ -786,8 +1017,62 @@ adlFileInputStreamRead <- function(adlFileInputStream,
 #' @export
 adlFileInputStreamClose <- function(adlFileInputStream,
                                      verbose = FALSE) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
   if(adlFileInputStream$streamClosed) return(NULL) # Return silently upon multiple closes
   adlFileInputStream$streamClosed <- TRUE
   adlFileInputStream$buffer <- raw(0) # release byte buffer so it can be GC'ed even if app continues to hold reference to stream
   return(NULL)
+}
+
+#' Not supported by this stream. Throws `UnsupportedOperationException`
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @param readLimit ignored
+#' @return NULL (void)
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamMark <- function(adlFileInputStream, readLimit) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
+  stop(paste0("UnsupportedOperationException: mark()/reset() not supported on this stream - readLimit: ", readLimit))
+}
+
+#' Not supported by this stream. Throws `UnsupportedOperationException`
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @return NULL (void)
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamReset <- function(adlFileInputStream) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
+  stop("UnsupportedOperationException: mark()/reset() not supported on this stream")
+}
+
+#' gets whether mark and reset are supported by `ADLFileInputStream`. Always returns false.
+#'
+#' @param adlFileInputStream adlFileInputStream of the file
+#' @return FALSE (always)
+#'
+#' @family Azure Data Lake Store functions
+#' @export
+adlFileInputStreamMarkSupported <- function(adlFileInputStream) {
+  if (!missing(adlFileInputStream) && !is.null(adlFileInputStream)) {
+    assert_that(is.adlFileInputStream(adlFileInputStream))
+    adlFileInputStreamCheck(adlFileInputStream)
+  }
+
+  return(FALSE)
 }

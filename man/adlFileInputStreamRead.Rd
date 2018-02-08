@@ -27,7 +27,16 @@ list that contains number of bytes read and the \code{buffer}
 Read an adlFileInputStream.
 }
 \seealso{
-Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
+Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamAvailable}},
+  \code{\link{adlFileInputStreamClose}},
+  \code{\link{adlFileInputStreamGetPos}},
+  \code{\link{adlFileInputStreamLength}},
+  \code{\link{adlFileInputStreamMarkSupported}},
+  \code{\link{adlFileInputStreamMark}},
+  \code{\link{adlFileInputStreamReadBuffered}},
+  \code{\link{adlFileInputStreamReset}},
+  \code{\link{adlFileInputStreamSeek}},
+  \code{\link{adlFileInputStreamSkip}},
   \code{\link{adlFileOutputStreamClose}},
   \code{\link{adlFileOutputStreamFlush}},
   \code{\link{adlFileOutputStreamWrite}},
@@ -43,5 +52,6 @@ Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
   \code{\link{azureDataLakeReadCore}},
   \code{\link{azureDataLakeRead}},
   \code{\link{createAdlFileInputStream}},
-  \code{\link{createAdlFileOutputStream}}
+  \code{\link{createAdlFileOutputStream}},
+  \code{\link{readFromService}}
 }
