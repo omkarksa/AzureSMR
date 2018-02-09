@@ -107,7 +107,7 @@ azure_storage_header <- function(shared_key, date = x_ms_date(), content_length 
 }
 
 getAzureDataLakeSDKVersion <- function() {
-  return("1.0.0.0")
+  return("1.1.0")
 }
 
 getAzureDataLakeSDKUserAgent <- function() {
@@ -127,7 +127,7 @@ getAzureDataLakeBasePath <- function(azureDataLakeAccount) {
 }
 
 getAzureDataLakeApiVersion <- function() {
-  return("&api-version=2016-11-01")
+  return("&api-version=2017-08-01")
 }
 
 getAzureDataLakeDefaultBufferSize <- function() {
