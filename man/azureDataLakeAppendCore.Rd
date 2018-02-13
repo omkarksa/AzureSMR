@@ -29,7 +29,7 @@ azureDataLakeAppendCore(azureActiveContext, azureDataLakeAccount, relativePath,
 \item{syncFlag}{Use \code{DATA} when writing more bytes to same file path. Most performant operation.
 Use \code{METADATA} when metadata for the
 file also needs to be updated especially file length
-retrieved from \code{azureDataLakeGetfileStatus} or \code{azureDatalakeListStatus API call. Has an overhead of updating metadata operation. Use}CLOSE`` when no more data is
+retrieved from \code{azureDataLakeGetfileStatus} or \code{azureDatalakeListStatus API call. Has an overhead of updating metadata operation. Use}CLOSE` when no more data is
 expected to be written in this path. Adl backend would
 update metadata, close the stream handle and
 release the lease on the

@@ -165,6 +165,13 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   expect_equal(res[[1]], 2097152)
   expect_equal(res[[2]], binData)
   res <- adlFileInputStreamClose(adlFIS, TRUE)
+  # OPEN(READ_BUFFERED) - test2MB.bin
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test2MB.bin")
+  buffer <- raw(2097152)
+  res <- adlFileInputStreamReadBuffered(adlFIS, buffer, 1L, 2097152L, TRUE)
+  expect_equal(res[[1]], 2097152)
+  expect_equal(res[[2]], binData)
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
 
   # CREATE
   res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test4MB.bin", "755")
@@ -189,6 +196,13 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test4MB.bin")
   buffer <- raw(4194304)
   res <- adlFileInputStreamRead(adlFIS, 0L, buffer, 1L, 4194304L, TRUE)
+  expect_equal(res[[1]], 4194304)
+  expect_equal(res[[2]], binData)
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
+  # OPEN(READ_BUFFERED) - test4MB.bin
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test4MB.bin")
+  buffer <- raw(4194304)
+  res <- adlFileInputStreamReadBuffered(adlFIS, buffer, 1L, 4194304L, TRUE)
   expect_equal(res[[1]], 4194304)
   expect_equal(res[[2]], binData)
   res <- adlFileInputStreamClose(adlFIS, TRUE)
@@ -219,12 +233,20 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   expect_equal(res[[1]], 6291456)
   expect_equal(res[[2]], binData)
   res <- adlFileInputStreamClose(adlFIS, TRUE)
+  # OPEN(READ_BUFFERED) - test6MB.bin
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test6MB.bin")
+  buffer <- raw(6291456)
+  res <- adlFileInputStreamReadBuffered(adlFIS, buffer, 1L, 6291456L, TRUE)
+  expect_equal(res[[1]], 4194304)
+  expect_equal(res[[2]][1:4194304], binData[1:4194304])
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
 
   # CREATE
   res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin", "755")
   expect_null(res)
   # **** APPEND - 2MB to test6MBWA.bin
   binData <- readBin(con = datafile2MB, what = "raw", n = 2097152)
+  binDataWA <- binData
   adlFOS <- azureDataLakeAppendBOS(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
   expect_is(adlFOS, "adlFileOutputStream")
   res <- adlFileOutputStreamWrite(adlFOS, binData, 1, 2097152L)
@@ -241,6 +263,7 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   expect_equal(res$FileStatus.length, 2097152)
   # **** APPEND - 4MB to test6MBWA.bin
   binData <- readBin(con = datafile4MB, what = "raw", n = 4194304)
+  binDataWA[2097153:6291456] <- binData[1:4194304]
   adlFOS <- azureDataLakeAppendBOS(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
   expect_is(adlFOS, "adlFileOutputStream")
   res <- adlFileOutputStreamWrite(adlFOS, binData, 1, 4194304L)
@@ -260,7 +283,7 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   buffer <- raw(6291456)
   res <- adlFileInputStreamRead(adlFIS, 0L, buffer, 1L, 6291456L, TRUE)
   expect_equal(res[[1]], 6291456)
-  expect_equal(res[[2]][2097153:6291456], binData)
+  expect_equal(res[[2]], binDataWA)
   res <- adlFileInputStreamClose(adlFIS, TRUE)
   # OPEN(READ) - test6MBWA.bin- check with offset
   adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
@@ -268,6 +291,13 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   res <- adlFileInputStreamRead(adlFIS, 2097152L, buffer, 2097153L, 4194304L, TRUE)
   expect_equal(res[[1]], 4194304)
   expect_equal(res[[2]][2097153:6291456], binData)
+  res <- adlFileInputStreamClose(adlFIS, TRUE)
+  # OPEN(READ_BUFFERED) - test6MBWA.bin
+  adlFIS <- azureDataLakeOpenBIS(asc, azureDataLakeAccount, "tempfolder1/test6MBWA.bin")
+  buffer <- raw(6291456)
+  res <- adlFileInputStreamReadBuffered(adlFIS, buffer, 1L, 6291456L, TRUE)
+  expect_equal(res[[1]], 4194304)
+  expect_equal(res[[2]][1:4194304], binDataWA[1:4194304])
   res <- adlFileInputStreamClose(adlFIS, TRUE)
 
   # DELETE

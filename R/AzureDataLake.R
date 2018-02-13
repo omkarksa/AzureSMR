@@ -301,7 +301,7 @@ azureDataLakeAppendBOS <- function(azureActiveContext, azureDataLakeAccount, rel
 #'         file also needs to be updated especially file length
 #'         retrieved from `azureDataLakeGetfileStatus` or `azureDatalakeListStatus API call.
 #'         Has an overhead of updating metadata operation.
-#'     Use `CLOSE`` when no more data is
+#'     Use `CLOSE` when no more data is
 #'         expected to be written in this path. Adl backend would
 #'         update metadata, close the stream handle and
 #'         release the lease on the
@@ -543,7 +543,6 @@ createAdlFileOutputStream <- function(azureActiveContext, accountName, relativeP
   azEnv$cursor <- 1L
   res <- azureDataLakeGetFileStatus(azureActiveContext, accountName, relativePath, verbose)
   azEnv$remoteCursor <- as.integer(res$FileStatus.length) # this remote cursor starts from 0
-  print(paste0("[DEBUG] createAdlFileOutputStream(): size of file: ", azEnv$remoteCursor))
   azEnv$streamClosed <- FALSE
   azEnv$lastFlushUpdatedMetadata <- FALSE
 
@@ -616,8 +615,6 @@ addToBuffer <- function(adlFileOutputStream, contents, off, len) {
   # optimized arraycopy
   adlFileOutputStream$buffer[cursor : (cursor + len - 1)] <- contents[off : (off + len - 1)]
   adlFileOutputStream$cursor <- as.integer(cursor + len)
-  print(paste0("[DEBUG] addToBuffer(): buffer length: ", getContentSize(adlFileOutputStream$buffer)))
-  print(paste0("[DEBUG] adlFileOutputStream$cursor: ", adlFileOutputStream$cursor))
 }
 
 #' Flush an adlFileOutputStream.
@@ -699,7 +696,6 @@ createAdlFileInputStream <- function(azureActiveContext, accountName, relativePa
   if (!missing(accountName)) azEnv$accountName <- accountName
   if (!missing(relativePath)) azEnv$relativePath <- relativePath
   azEnv$directoryEntry <- azureDataLakeGetFileStatus(azureActiveContext, accountName, relativePath, verbose)
-  print(paste0("[DEBUG] createAdlFileInputStream(): size of file: ", azEnv$directoryEntry$FileStatus.length))
   if(azEnv$directoryEntry$FileStatus.type == "DIRECTORY") {
     msg <- paste0("ADLException: relativePath is not a file: ", relativePath)
     stop(msg)
@@ -709,7 +705,7 @@ createAdlFileInputStream <- function(azureActiveContext, accountName, relativePa
   azEnv$buffer <- raw(0)
   # cursors/indices/offsets in R should start from 1 and NOT 0. 
   # Because of this there are many adjustments that need to be done throughout the code!
-  azEnv$fCursor <- 1L # cursor of buffer within file - offset of next byte to read from remote server
+  azEnv$fCursor <- 0L # cursor of buffer within file - offset of next byte to read from remote server
   azEnv$bCursor <- 1L # cursor of read within buffer - offset of next byte to be returned from buffer
   azEnv$limit <- 1L # offset of next byte to be read into buffer from service (i.e., upper marker+1 of valid bytes in buffer)
   azEnv$streamClosed <- FALSE
@@ -801,7 +797,7 @@ adlFileInputStreamReadBuffered <- function(adlFileInputStream,
   assert_that(is_offset(offset))
   assert_that(is_length(length))
 
-  if (offset < 1L || length < 0L || length > getContentSize(buffer) - offset - 1) {
+  if (offset < 1L || length < 0L || length > (getContentSize(buffer) - (offset - 1L))) {
     stop("IndexOutOfBoundsException")
   }
   if (length == 0) {
@@ -819,9 +815,9 @@ adlFileInputStreamReadBuffered <- function(adlFileInputStream,
 
   bytesRemaining <- (adlFileInputStream$limit - adlFileInputStream$bCursor)
   limits <- c(length, bytesRemaining)
-  bytesToRead <- which.min(limits)
-  buffer[offset:(offset + bytesToRead)] <- 
-    adlFileInputStream$buffer[adlFileInputStream$bCursor:(adlFileInputStream$bCursor + bytesToRead)]
+  bytesToRead <- limits[which.min(limits)]
+  buffer[offset:(offset - 1 + bytesToRead)] <- 
+    adlFileInputStream$buffer[adlFileInputStream$bCursor:(adlFileInputStream$bCursor - 1 + bytesToRead)]
   adlFileInputStream$bCursor <- adlFileInputStream$bCursor + bytesToRead
   res <- list(bytesToRead, buffer)
   return(res)
@@ -838,7 +834,7 @@ adlFileInputStreamReadBuffered <- function(adlFileInputStream,
 readFromService <- function(adlFileInputStream, verbose = FALSE) {
   if (adlFileInputStream$bCursor < adlFileInputStream$limit) return(0) #if there's still unread data in the buffer then dont overwrite it At or past end of file
   if (adlFileInputStream$fCursor >= adlFileInputStream$directoryEntry$FileStatus.length) return(-1)
-  if (adlFileInputStream$directoryEntry$FileStatus.length <= adlFileInputStream$blocksize)
+  if (adlFileInputStream$directoryEntry$FileStatus.length <= adlFileInputStream$blockSize)
     return(slurpFullFile(adlFileInputStream))
 
   #reset buffer to initial state - i.e., throw away existing data
@@ -848,14 +844,14 @@ readFromService <- function(adlFileInputStream, verbose = FALSE) {
 
   resHttp <- azureDataLakeReadCore(adlFileInputStream$azureActiveContext, 
                                    adlFileInputStream$accountName, adlFileInputStream$relativePath, 
-                                   adlFileInputStream$fCursor, adlFileInputStream$blocksize, 
+                                   adlFileInputStream$fCursor, adlFileInputStream$blockSize, 
                                    verbose = verbose)
   stopWithAzureError(resHttp)
   data <- content(resHttp, "raw", encoding = "UTF-8")
   bytesRead <- getContentSize(data)
   adlFileInputStream$buffer[1:bytesRead] <- data[1:bytesRead]
   adlFileInputStream$limit <- adlFileInputStream$limit + bytesRead
-  adlFileInputStream$fCursor <- adlFileInputStream$cursor + bytesRead
+  adlFileInputStream$fCursor <- adlFileInputStream$fCursor + bytesRead
   return(bytesRead)
 }
 
@@ -866,22 +862,26 @@ readFromService <- function(adlFileInputStream, verbose = FALSE) {
 #' @return number of bytes actually read
 slurpFullFile <- function(adlFileInputStream, verbose = FALSE) {
   if (is.null(adlFileInputStream$buffer)) {
-    blocksize <- adlFileInputStream$directoryEntry$FileStatus.length
-    buffer <- raw(adlFileInputStream$directoryEntry$FileStatus.length)
+    adlFileInputStream$blocksize <- adlFileInputStream$directoryEntry$FileStatus.length
+    adlFileInputStream$buffer <- raw(adlFileInputStream$directoryEntry$FileStatus.length)
   }
 
   #reset buffer to initial state - i.e., throw away existing data
-  adlFileInputStream$bCursor <- adlFileInputStreamGetPos(adlFileInputStream);  # preserve current file offset (may not be 0 if app did a seek before first read)
+  adlFileInputStream$bCursor <- adlFileInputStreamGetPos(adlFileInputStream) + 1L  # preserve current file offset (may not be 0 if app did a seek before first read)
   adlFileInputStream$limit <- 1L
-  adlFileInputStream$fCursor <- 1L  # read from beginning
+  adlFileInputStream$fCursor <- 0L  # read from beginning
 
   resHttp <- azureDataLakeReadCore(adlFileInputStream$azureActiveContext, 
                                    adlFileInputStream$accountName, adlFileInputStream$relativePath, 
                                    adlFileInputStream$fCursor, adlFileInputStream$directoryEntry$FileStatus.length, 
                                    verbose = verbose)
   stopWithAzureError(resHttp)
-  resRaw <- content(resHttp, "raw", encoding = "UTF-8")
-  resRawLen <- getContentSize(resRaw)
+  data <- content(resHttp, "raw", encoding = "UTF-8")
+  bytesRead <- getContentSize(data)
+  adlFileInputStream$buffer[1:bytesRead] <- data[1:bytesRead]
+  adlFileInputStream$limit <- adlFileInputStream$limit + bytesRead
+  adlFileInputStream$fCursor <- adlFileInputStream$fCursor + bytesRead
+  return(bytesRead)
 }
 
 #' Seek to given position in stream.
@@ -953,7 +953,7 @@ adlFileInputStreamSkip <- function(adlFileInputStream, n) {
 #'
 #' @param adlFileInputStream adlFileInputStream of the file
 #' @return the number of bytes availabel
-#' @exception IOException throws `ADLException`` if call fails
+#' @exception IOException throws `ADLException` if call fails
 #'
 #' @family Azure Data Lake Store functions
 #' @export
