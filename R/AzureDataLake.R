@@ -1,11 +1,3 @@
-
-# Global variables required for this class
-{
-  # create a syncFlagEnum object used by the Azure Data Lake Store functions.
-  syncFlagEnum <- list("DATA", "METADATA", "CLOSE", "PIPELINE")
-  names(syncFlagEnum) <- syncFlagEnum
-}
-
 #' List the statuses of the files/directories in the given path.
 #'
 #' @inheritParams setAzureContext
@@ -589,7 +581,7 @@ adlFileOutputStreamWrite <- function(adlFileOutputStream, contents, off, len,
 
   # if len > 4MB, then we force-break the write into 4MB chunks
   while (len > adlFileOutputStream$blockSize) {
-    adlFileOutputStreamFlush(adlFileOutputStream, "DATA", verbose) # flush first, because we want to preserve record boundary of last append
+    adlFileOutputStreamFlush(adlFileOutputStream, syncFlagEnum$DATA, verbose) # flush first, because we want to preserve record boundary of last append
     addToBuffer(adlFileOutputStream, contents, off, adlFileOutputStream$blockSize)
     off <- off + adlFileOutputStream$blockSize
     len <- len - adlFileOutputStream$blockSize
@@ -598,7 +590,7 @@ adlFileOutputStreamWrite <- function(adlFileOutputStream, contents, off, len,
 
   # if adding this to buffer would overflow buffer, then flush buffer first
   if (len > getContentSize(adlFileOutputStream$buffer) - (adlFileOutputStream$cursor - 1)) {
-    adlFileOutputStreamFlush(adlFileOutputStream, "DATA", verbose)
+    adlFileOutputStreamFlush(adlFileOutputStream, syncFlagEnum$DATA, verbose)
   }
   # now we know b will fit in remaining buffer, so just add it in
   addToBuffer(adlFileOutputStream, contents, off, len)

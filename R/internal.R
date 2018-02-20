@@ -134,6 +134,13 @@ getAzureDataLakeDefaultBufferSize <- function() {
   return(as.integer(4 * 1024 * 1024))
 }
 
+# Global variables required for Azure Data Lake Store
+{
+  # create a syncFlagEnum object used by the Azure Data Lake Store functions.
+  syncFlagEnum <- list("DATA", "METADATA", "CLOSE", "PIPELINE")
+  names(syncFlagEnum) <- syncFlagEnum
+}
+
 callAzureDataLakeApi <- function(url, verb = "GET", azureActiveContext,
                                 content = raw(0), contenttype = "text/plain; charset=UTF-8",
                                 verbose = FALSE) {
