@@ -7,8 +7,8 @@
 #' @return Returns a FileStatuses data frame with a row for each directory element. 
 #'         Each row has 11 columns (12 in case of a file):
 #'         FileStatuses.FileStatus.(accessTime, modificationTime, replication, permission, owner, group, aclBit, msExpirationtime (in case of file))
-#' @exception FileNotFoundException
-#' @exception IOException
+#' Exception FileNotFoundException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -69,8 +69,8 @@ azureDataLakeListStatus <- function(azureActiveContext, azureDataLakeAccount, re
 #' @return Returns a FileStatus data frame with one row for directory element. 
 #'         The row has 11 columns (12 in case of a [file]):
 #'         FileStatuses.FileStatus.(accessTime, modificationTime, replication, permission, owner, group, aclBit, msExpirationtime (in case of file))
-#' @exception FileNotFoundException
-#' @exception IOException
+#' Exception FileNotFoundException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -128,7 +128,7 @@ azureDataLakeGetFileStatus <- function(azureActiveContext, azureDataLakeAccount,
 #' @param permission Permission to be set for the directory (default is 755).
 #' @param verbose Print tracing information (default FALSE).
 #' @return Returns true if the directory creation succeeds; false otherwise.
-#' @exception IOException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -174,7 +174,7 @@ azureDataLakeMkdirs <- function(azureActiveContext, azureDataLakeAccount, relati
 #' @param contents raw contents to be written to the newly created file (default raw(0)).
 #' @param verbose Print tracing information (default FALSE).
 #' @return NULL (void)
-#' @exception IOException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -232,7 +232,7 @@ azureDataLakeCreate <- function(azureActiveContext, azureDataLakeAccount, relati
 #' @param contentSize size of `contents` to be written to the file.
 #' @param verbose Print tracing information (default FALSE).
 #' @return NULL (void)
-#' @exception IOException
+#' Exception IOException
 #' 
 #' @family Azure Data Lake Store functions
 #' @export
@@ -257,7 +257,7 @@ azureDataLakeAppend <- function(azureActiveContext, azureDataLakeAccount, relati
 #' @param relativePath Relative path of a file.
 #' @param verbose Print tracing information (default FALSE).
 #' @return adlFileOutputStream object.
-#' @exception IOException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -304,7 +304,7 @@ azureDataLakeAppendBOS <- function(azureActiveContext, azureDataLakeAccount, rel
 #'     To let the server choose offset, pass `-1`.
 #' @param verbose Print tracing information (default FALSE).
 #' @return response object
-#' @exception IOException
+#' Exception IOException
 #' 
 #' @family Azure Data Lake Store functions
 #' 
@@ -358,7 +358,7 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
 #' @param bufferSize Size of the buffer to be used. (not honoured).
 #' @param verbose Print tracing information (default FALSE).
 #' @return raw contents of the file.
-#' @exception IOException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -390,7 +390,7 @@ azureDataLakeRead <- function(azureActiveContext,
 #' @param bufferSize Size of the buffer to be used. (not honoured).
 #' @param verbose Print tracing information (default FALSE).
 #' @return an object of adlFileInputStream.
-#' @exception IOException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -426,7 +426,7 @@ azureDataLakeOpenBIS <- function(azureActiveContext, azureDataLakeAccount,
 #' @param bufferSize Size of the buffer to be used. (not honoured).
 #' @param verbose Print tracing information (default FALSE).
 #' @return raw contents of the file.
-#' @exception IOException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #'
@@ -472,7 +472,7 @@ azureDataLakeReadCore <- function(azureActiveContext,
 #' @param recursive If path is a directory, recursively delete contents and directory (default FALSE).
 #' @param verbose Print tracing information (default FALSE).
 #' @return true if delete is successful else false.
-#' @exception IOException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -881,8 +881,8 @@ slurpFullFile <- function(adlFileInputStream, verbose = FALSE) {
 #' @param adlFileInputStream adlFileInputStream of the file
 #' @param n position to seek to
 #' @return NULL (void)
-#' @exception IOException if there is an error
-#' @exception EOFException if attempting to seek past end of file
+#' Exception IOException if there is an error
+#' Exception EOFException if attempting to seek past end of file
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -914,8 +914,8 @@ adlFileInputStreamSeek <- function(adlFileInputStream, n) {
 #' @param adlFileInputStream adlFileInputStream of the file
 #' @param n position to seek to
 #' @return NULL
-#' @exception IOException if there is an error
-#' @exception EOFException if attempting to seek past end of file
+#' Exception IOException if there is an error
+#' Exception EOFException if attempting to seek past end of file
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -945,7 +945,7 @@ adlFileInputStreamSkip <- function(adlFileInputStream, n) {
 #'
 #' @param adlFileInputStream adlFileInputStream of the file
 #' @return the number of bytes availabel
-#' @exception IOException throws `ADLException` if call fails
+#' Exception IOException throws `ADLException` if call fails
 #'
 #' @family Azure Data Lake Store functions
 #' @export
@@ -965,7 +965,7 @@ adlFileInputStreamAvailable <- function(adlFileInputStream) {
 #'
 #' @param adlFileInputStream adlFileInputStream of the file
 #' @return length of the file.
-#' @exception IOException if the stream is closed
+#' Exception IOException if the stream is closed
 #' 
 #' @family Azure Data Lake Store functions
 #' @export
@@ -983,7 +983,7 @@ adlFileInputStreamLength <- function(adlFileInputStream) {
 #'
 #' @param adlFileInputStream adlFileInputStream of the file
 #' @return position of the cursor
-#' @exception IOException
+#' Exception IOException
 #'
 #' @family Azure Data Lake Store functions
 #' @export

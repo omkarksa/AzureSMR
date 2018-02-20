@@ -20,6 +20,7 @@ azureDataLakeOpenBIS(azureActiveContext, azureDataLakeAccount, relativePath,
 }
 \value{
 an object of adlFileInputStream.
+Exception IOException
 }
 \description{
 Open a file and return an adlFileInputStream

@@ -31,6 +31,7 @@ azureDataLakeCreate(azureActiveContext, azureDataLakeAccount, relativePath,
 }
 \value{
 NULL (void)
+Exception IOException
 }
 \description{
 Create and write to a file.

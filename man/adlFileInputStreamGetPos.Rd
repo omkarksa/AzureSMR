@@ -11,6 +11,7 @@ adlFileInputStreamGetPos(adlFileInputStream)
 }
 \value{
 position of the cursor
+Exception IOException
 }
 \description{
 gets the position of the cursor within the file

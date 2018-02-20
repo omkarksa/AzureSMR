@@ -20,6 +20,8 @@ azureDataLakeListStatus(azureActiveContext, azureDataLakeAccount, relativePath,
 Returns a FileStatuses data frame with a row for each directory element.
 Each row has 11 columns (12 in case of a file):
 FileStatuses.FileStatus.(accessTime, modificationTime, replication, permission, owner, group, aclBit, msExpirationtime (in case of file))
+Exception FileNotFoundException
+Exception IOException
 }
 \description{
 List the statuses of the files/directories in the given path.

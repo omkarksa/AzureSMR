@@ -44,6 +44,7 @@ To let the server choose offset, pass \code{-1}.}
 }
 \value{
 response object
+Exception IOException
 }
 \description{
 The Core Append API.

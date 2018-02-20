@@ -24,6 +24,7 @@ azureDataLakeAppend(azureActiveContext, azureDataLakeAccount, relativePath,
 }
 \value{
 NULL (void)
+Exception IOException
 }
 \description{
 Append to an existing file.

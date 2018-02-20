@@ -12,6 +12,7 @@ adlFileInputStreamAvailable(adlFileInputStream)
 }
 \value{
 the number of bytes availabel
+Exception IOException throws \code{ADLException} if call fails
 }
 \description{
 returns the remaining number of bytes available to read from the buffer, without having to call

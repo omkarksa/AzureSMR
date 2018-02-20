@@ -13,6 +13,7 @@ adlFileInputStreamLength(adlFileInputStream)
 }
 \value{
 length of the file.
+Exception IOException if the stream is closed
 }
 \description{
 Returns the length of the file that this stream refers to. Note that the length returned is the length

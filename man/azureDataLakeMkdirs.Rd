@@ -20,6 +20,7 @@ azureDataLakeMkdirs(azureActiveContext, azureDataLakeAccount, relativePath,
 }
 \value{
 Returns true if the directory creation succeeds; false otherwise.
+Exception IOException
 }
 \description{
 Create a directory with the provided permission.

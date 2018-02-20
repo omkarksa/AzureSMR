@@ -20,6 +20,7 @@ azureDataLakeDelete(azureActiveContext, azureDataLakeAccount, relativePath,
 }
 \value{
 true if delete is successful else false.
+Exception IOException
 }
 \description{
 Delete a file/directory.

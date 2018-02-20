@@ -13,6 +13,8 @@ adlFileInputStreamSeek(adlFileInputStream, n)
 }
 \value{
 NULL (void)
+Exception IOException if there is an error
+Exception EOFException if attempting to seek past end of file
 }
 \description{
 Seek to given position in stream.

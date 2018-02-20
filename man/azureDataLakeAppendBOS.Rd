@@ -18,6 +18,7 @@ azureDataLakeAppendBOS(azureActiveContext, azureDataLakeAccount, relativePath,
 }
 \value{
 adlFileOutputStream object.
+Exception IOException
 }
 \description{
 AppendBOS to an existing file.

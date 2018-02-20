@@ -11,6 +11,11 @@ adlFileInputStreamSkip(adlFileInputStream, n)
 
 \item{n}{position to seek to}
 }
+\value{
+NULL
+Exception IOException if there is an error
+Exception EOFException if attempting to seek past end of file
+}
 \description{
 Skip to given position in stream.
 }

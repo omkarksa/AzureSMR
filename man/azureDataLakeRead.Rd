@@ -24,6 +24,7 @@ azureDataLakeRead(azureActiveContext, azureDataLakeAccount, relativePath,
 }
 \value{
 raw contents of the file.
+Exception IOException
 }
 \description{
 Open and read a file.
