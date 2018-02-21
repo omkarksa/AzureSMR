@@ -111,11 +111,12 @@ getAzureDataLakeSDKVersion <- function() {
 }
 
 getAzureDataLakeSDKUserAgent <- function() {
+  sysInf <- as.list(strsplit(Sys.info(), "\t"))
   adlsUA <- paste0("ADLSRSDK"
                    , "-", getAzureDataLakeSDKVersion()
-                   , "/", Sys.info()[1], "-", Sys.info()[2] #sysname-release
-                   , "-", Sys.info()[3] #version
-                   , "-", Sys.info()[5] #machine
+                   , "/", sysInf$sysname, "-", sysInf$release
+                   , "-", sysInf$version
+                   , "-", sysInf$machine
                    , "/", R.version$version.string
   )
   return(adlsUA)
