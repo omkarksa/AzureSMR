@@ -26,7 +26,7 @@ azureDataLakeListStatus <- function(azureActiveContext, azureDataLakeAccount, re
   assert_that(is_relativePath(relativePath))
   URL <- paste0(
     getAzureDataLakeBasePath(azureDataLakeAccount),
-    relativePath,
+    getAzureDataLakeURLEncodedString(relativePath),
     "?op=LISTSTATUS",
     getAzureDataLakeApiVersion()
     )
@@ -56,7 +56,6 @@ azureDataLakeListStatus <- function(azureActiveContext, azureDataLakeAccount, re
     )
   }
   resDf <- as.data.frame(resJsonObj)
-  resDf
   return(resDf)
 }
 
@@ -87,7 +86,7 @@ azureDataLakeGetFileStatus <- function(azureActiveContext, azureDataLakeAccount,
   assert_that(is_relativePath(relativePath))
   URL <- paste0(
     getAzureDataLakeBasePath(azureDataLakeAccount),
-    relativePath,
+    getAzureDataLakeURLEncodedString(relativePath),
     "?op=GETFILESTATUS",
     getAzureDataLakeApiVersion()
   )
@@ -146,7 +145,7 @@ azureDataLakeMkdirs <- function(azureActiveContext, azureDataLakeAccount, relati
   if (!missing(permission) && !is.null(permission)) assert_that(is_permission(permission))
   URL <- paste0(
     getAzureDataLakeBasePath(azureDataLakeAccount),
-    relativePath,
+    getAzureDataLakeURLEncodedString(relativePath),
     "?op=MKDIRS",
     getAzureDataLakeApiVersion()
   )
@@ -204,7 +203,7 @@ azureDataLakeCreate <- function(azureActiveContext, azureDataLakeAccount, relati
   if (!missing(contents) && !is.null(contents)) assert_that(is_content(contents))
   URL <- paste0(
     getAzureDataLakeBasePath(azureDataLakeAccount),
-    relativePath,
+    getAzureDataLakeURLEncodedString(relativePath),
     "?op=CREATE", "&write=true",
     getAzureDataLakeApiVersion()
   )
@@ -215,7 +214,7 @@ azureDataLakeCreate <- function(azureActiveContext, azureDataLakeAccount, relati
   if (!missing(blockSize) && !is.null(blockSize)) URL <- paste0(URL, "&blocksize=", blockSize)
   resHttp <- callAzureDataLakeApi(URL, verb = "PUT",
                                   azureActiveContext = azureActiveContext,
-                                  content = contents, contenttype = "text/plain; charset=UTF-8",
+                                  content = contents,
                                   verbose = verbose)
   stopWithAzureError(resHttp)
   # return a NULL (void)
@@ -332,7 +331,7 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
   # allow a zero byte append
   URL <- paste0(
     getAzureDataLakeBasePath(azureDataLakeAccount),
-    relativePath,
+    getAzureDataLakeURLEncodedString(relativePath),
     "?op=APPEND", "&append=true",
     getAzureDataLakeApiVersion()
   )
@@ -343,7 +342,7 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
   if (offsetToAppendTo >= 0) URL <- paste0(URL, "&offset=", offsetToAppendTo)
   resHttp <- callAzureDataLakeApi(URL, verb = "POST",
                                   azureActiveContext = azureActiveContext,
-                                  content = contents[1:contentSize], contenttype = "text/plain; charset=UTF-8",
+                                  content = contents[1:contentSize],
                                   verbose = verbose)
   return(resHttp)
 }
@@ -451,7 +450,7 @@ azureDataLakeReadCore <- function(azureActiveContext,
   if (!missing(bufferSize) && !is.null(bufferSize)) assert_that(is_bufferSize(bufferSize))
   URL <- paste0(
     getAzureDataLakeBasePath(azureDataLakeAccount),
-    relativePath,
+    getAzureDataLakeURLEncodedString(relativePath),
     "?op=OPEN", "&read=true",
     getAzureDataLakeApiVersion()
   )
@@ -489,7 +488,7 @@ azureDataLakeDelete <- function(azureActiveContext, azureDataLakeAccount, relati
   assert_that(is_relativePath(relativePath))
   URL <- paste0(
     getAzureDataLakeBasePath(azureDataLakeAccount),
-    relativePath,
+    getAzureDataLakeURLEncodedString(relativePath),
     "?op=DELETE",
     getAzureDataLakeApiVersion()
   )

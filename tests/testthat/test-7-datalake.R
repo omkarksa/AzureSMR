@@ -42,30 +42,37 @@ context(" - data lake store")
 test_that("Can create, list, get, update and delete items in an azure data lake account", {
   skip_if_missing_config(settingsfile)
 
+  testFolder <- "tempfolder1?1文件夹1" # also test for special characters and utf16 languages
+  Encoding(testFolder) <- "UTF-8" # need to explicitly set the string encoding in case of other language characters!?
+  testFile1 <- "tempfile00.txt"
+  testFile2 <- "tempfile01.txt"
+
+  verbose <- FALSE
+
   # cleanup the account before starting tests!
   try(
-    azureDataLakeDelete(asc, azureDataLakeAccount, "tempfolder", TRUE)
+    azureDataLakeDelete(asc, azureDataLakeAccount, testFolder, TRUE, verbose = verbose)
   )
 
   # now start the tests
 
   # LISTSTATUS on non-existent test directory
-  expect_error(azureDataLakeListStatus(asc, azureDataLakeAccount, "tempfolder"))
+  expect_error(azureDataLakeListStatus(asc, azureDataLakeAccount, testFolder))
   # GETFILESTATUS on non-existent test directory
-  expect_error(azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "tempfolder"))
+  expect_error(azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFolder))
 
   # MKDIRS
-  res <- azureDataLakeMkdirs(asc, azureDataLakeAccount, "tempfolder")
+  res <- azureDataLakeMkdirs(asc, azureDataLakeAccount, testFolder, verbose = verbose)
   expect_true(res)
   # MKDIRS - check 1 - LISTSTATUS
-  res <- azureDataLakeListStatus(asc, azureDataLakeAccount, "")
+  res <- azureDataLakeListStatus(asc, azureDataLakeAccount, "", verbose = verbose)
   expect_is(res, "data.frame")
   expect_gte(nrow(res), 1)
   expect_equal(ncol(res), 11)
   # pathsuffix of a file/directory in liststatus will NOT be empty!
-  expect_equal(res$FileStatuses.FileStatus.pathSuffix[1] == "tempfolder", TRUE)
+  expect_equal(res$FileStatuses.FileStatus.pathSuffix[1] == testFolder, TRUE)
   # MKDIRS - check 2 - GETFILESTATUS
-  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "")
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "", verbose = verbose)
   expect_is(res, "data.frame")
   expect_gte(nrow(res), 1)
   expect_equal(ncol(res), 11)
@@ -73,19 +80,19 @@ test_that("Can create, list, get, update and delete items in an azure data lake 
   expect_equal(res$FileStatus.pathSuffix == "", TRUE)
 
   # CREATE
-  res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder/tempfile00.txt", "755", FALSE, 4194304L, 3L, 268435456L, charToRaw("abcd"))
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile1), "755", FALSE, 4194304L, 3L, 268435456L, charToRaw("abcd"), verbose = verbose)
   expect_null(res)
-  res <- azureDataLakeCreate(asc, azureDataLakeAccount, "tempfolder/tempfile01.txt", "755", FALSE, 4194304L, 3L, 268435456L, charToRaw("efgh"))
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile2), "755", FALSE, 4194304L, 3L, 268435456L, charToRaw("efgh"), verbose = verbose)
   expect_null(res)
   # CREATE - check
-  res <- azureDataLakeListStatus(asc, azureDataLakeAccount, "tempfolder")
+  res <- azureDataLakeListStatus(asc, azureDataLakeAccount, testFolder, verbose = verbose)
   expect_is(res, "data.frame")
   expect_equal(nrow(res), 2)
   expect_equal(ncol(res), 12)
-  expect_equal(res$FileStatuses.FileStatus.pathSuffix, c("tempfile00.txt", "tempfile01.txt"))
+  expect_equal(res$FileStatuses.FileStatus.pathSuffix, c(testFile1, testFile2))
   expect_equal(res$FileStatuses.FileStatus.length, c(4, 4))
   # CREATE - check 2
-  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, "tempfolder/tempfile00.txt")
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile1), verbose = verbose)
   expect_is(res, "data.frame")
   expect_equal(nrow(res), 1)
   expect_equal(ncol(res), 12)
@@ -94,31 +101,31 @@ test_that("Can create, list, get, update and delete items in an azure data lake 
   expect_equal(res$FileStatus.length, 4)
 
   # READ (OPEN) # CREATE - check 3
-  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile00.txt", length = 2L, bufferSize = 4194304L)
+  res <- azureDataLakeRead(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile1), length = 2L, bufferSize = 4194304L, verbose = verbose)
   expect_equal(rawToChar(res), "ab")
-  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile01.txt", 2L, 2L, 4194304L)
+  res <- azureDataLakeRead(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile2), 2L, 2L, 4194304L, verbose = verbose)
   expect_equal(rawToChar(res), "gh")
 
   # APPEND
-  res <- azureDataLakeAppend(asc, azureDataLakeAccount, "tempfolder/tempfile00.txt", 4194304L, charToRaw("stuv"))
+  res <- azureDataLakeAppend(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile1), 4194304L, charToRaw("stuv"), verbose = verbose)
   expect_null(res)
-  res <- azureDataLakeAppend(asc, azureDataLakeAccount, "tempfolder/tempfile01.txt", 4194304L, charToRaw("wxyz"))
+  res <- azureDataLakeAppend(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile2), 4194304L, charToRaw("wxyz"), verbose = verbose)
   expect_null(res)
   # APPEND - check
-  res <- azureDataLakeListStatus(asc, azureDataLakeAccount, "tempfolder")
+  res <- azureDataLakeListStatus(asc, azureDataLakeAccount, testFolder, verbose = verbose)
   expect_is(res, "data.frame")
   expect_equal(nrow(res), 2)
   expect_equal(ncol(res), 12)
-  expect_equal(res$FileStatuses.FileStatus.pathSuffix, c("tempfile00.txt", "tempfile01.txt"))
+  expect_equal(res$FileStatuses.FileStatus.pathSuffix, c(testFile1, testFile2))
   expect_equal(res$FileStatuses.FileStatus.length, c(8, 8))
   # APPEND - check 2 - READ (OPEN)
-  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile00.txt")
+  res <- azureDataLakeRead(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile1), verbose = verbose)
   expect_equal(rawToChar(res), "abcdstuv")
-  res <- azureDataLakeRead(asc, azureDataLakeAccount, "tempfolder/tempfile01.txt")
+  res <- azureDataLakeRead(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile2), verbose = verbose)
   expect_equal(rawToChar(res), "efghwxyz")
 
   # DELETE
-  res <- azureDataLakeDelete(asc, azureDataLakeAccount, "tempfolder", TRUE)
+  res <- azureDataLakeDelete(asc, azureDataLakeAccount, testFolder, TRUE, verbose = verbose)
   expect_true(res)
 })
 

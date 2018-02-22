@@ -135,6 +135,11 @@ getAzureDataLakeDefaultBufferSize <- function() {
   return(as.integer(4 * 1024 * 1024))
 }
 
+getAzureDataLakeURLEncodedString <- function(strToEncode) {
+  strToEncode <- URLencode(strToEncode, reserved = TRUE, repeated = TRUE)
+  return(strToEncode)
+}
+
 # Global variables required for Azure Data Lake Store
 {
   # create a syncFlagEnum object used by the Azure Data Lake Store functions.
@@ -143,7 +148,7 @@ getAzureDataLakeDefaultBufferSize <- function() {
 }
 
 callAzureDataLakeApi <- function(url, verb = "GET", azureActiveContext,
-                                content = raw(0), contenttype = "text/plain; charset=UTF-8",
+                                content = raw(0), contenttype = NULL, #"application/octet-stream",
                                 verbose = FALSE) {
   verbosity <- set_verbosity(verbose)
   commonHeaders <- c(Authorization = azureActiveContext$Token
@@ -160,9 +165,9 @@ callAzureDataLakeApi <- function(url, verb = "GET", azureActiveContext,
                      ),
          "PUT" = PUT(url,
                      add_headers(.headers = c(commonHeaders
-                                              , `Transfer-Encoding` = "chunked"
+                                              #, `Transfer-Encoding` = "chunked"
                                               , `Content-Length` = getContentSize(content)
-                                              , `Content-type` = contenttype
+                                              , `Content-Type` = contenttype
                                               )
                                  ),
                      body = content,
@@ -170,9 +175,9 @@ callAzureDataLakeApi <- function(url, verb = "GET", azureActiveContext,
                      ),
          "POST" = POST(url,
                      add_headers(.headers = c(commonHeaders
-                                              , `Transfer-Encoding` = "chunked"
+                                              #, `Transfer-Encoding` = "chunked"
                                               , `Content-Length` = getContentSize(content)
-                                              , `Content-type` = contenttype
+                                              , `Content-Type` = contenttype
                                               )
                                  ),
                      body = content,
