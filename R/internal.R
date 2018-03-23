@@ -106,50 +106,86 @@ azure_storage_header <- function(shared_key, date = x_ms_date(), content_length 
   add_headers(.headers = headers)
 }
 
+getAzureDataLakeSDKVersion <- function() {
+  return("1.1.0")
+}
+
+getAzureDataLakeSDKUserAgent <- function() {
+  sysInf <- as.list(strsplit(Sys.info(), "\t"))
+  adlsUA <- paste0("ADLSRSDK"
+                   , "-", getAzureDataLakeSDKVersion()
+                   , "/", sysInf$sysname, "-", sysInf$release
+                   , "-", sysInf$version
+                   , "-", sysInf$machine
+                   , "/", R.version$version.string
+  )
+  return(adlsUA)
+}
+
 getAzureDataLakeBasePath <- function(azureDataLakeAccount) {
   basePath <- paste0("https://", azureDataLakeAccount, ".azuredatalakestore.net/webhdfs/v1/")
   return(basePath)
 }
 
 getAzureDataLakeApiVersion <- function() {
-  return("&api-version=2016-11-01")
+  return("&api-version=2017-08-01")
+}
+
+getAzureDataLakeDefaultBufferSize <- function() {
+  return(as.integer(4 * 1024 * 1024))
+}
+
+getAzureDataLakeURLEncodedString <- function(strToEncode) {
+  strToEncode <- URLencode(strToEncode, reserved = TRUE, repeated = TRUE)
+  return(strToEncode)
+}
+
+# Global variables required for Azure Data Lake Store
+{
+  # create a syncFlagEnum object used by the Azure Data Lake Store functions.
+  syncFlagEnum <- list("DATA", "METADATA", "CLOSE", "PIPELINE")
+  names(syncFlagEnum) <- syncFlagEnum
 }
 
 callAzureDataLakeApi <- function(url, verb = "GET", azureActiveContext,
-                                content = raw(0), contenttype = "text/plain; charset=UTF-8",
+                                content = raw(0), contenttype = NULL, #"application/octet-stream",
                                 verbose = FALSE) {
   verbosity <- set_verbosity(verbose)
+  commonHeaders <- c(Authorization = azureActiveContext$Token
+                     , `User-Agent` = getAzureDataLakeSDKUserAgent()
+                     , `x-ms-client-request-id` = uuid()
+                     )
   resHttp <- switch(verb,
          "GET" = GET(url,
-                     add_headers(.headers = c(Authorization = azureActiveContext$Token,
-                                              `Content-Length` = "0"
+                     add_headers(.headers = c(commonHeaders
+                                              , `Content-Length` = "0"
                                               )
                                  ),
                      verbosity
                      ),
          "PUT" = PUT(url,
-                     add_headers(.headers = c(Authorization = azureActiveContext$Token,
-                                              `Transfer-Encoding` = "chunked",
-                                              `Content-Length` = getContentSize(content),
-                                              `Content-type` = contenttype
+                     add_headers(.headers = c(commonHeaders
+                                              #, `Transfer-Encoding` = "chunked"
+                                              , `Content-Length` = getContentSize(content)
+                                              , `Content-Type` = contenttype
                                               )
                                  ),
                      body = content,
                      verbosity
                      ),
          "POST" = POST(url,
-                     add_headers(.headers = c(Authorization = azureActiveContext$Token,
-                                              `Transfer-Encoding` = "chunked",
-                                              `Content-Length` = getContentSize(content),
-                                              `Content-type` = contenttype
+                     add_headers(.headers = c(commonHeaders
+                                              #, `Transfer-Encoding` = "chunked"
+                                              , `Content-Length` = getContentSize(content)
+                                              , `Content-Type` = contenttype
                                               )
                                  ),
                      body = content,
                      verbosity
                      ),
          "DELETE" = DELETE(url,
-                     add_headers(.headers = c(Authorization = azureActiveContext$Token,
-                                              `Content-Length` = "0"
+                     add_headers(.headers = c(commonHeaders
+                                              , `Content-Length` = "0"
                                               )
                                  ),
                      verbosity
@@ -185,14 +221,12 @@ getSig <- function(azureActiveContext, url, verb, key, storageAccount,
                    )
   }
 
-
-stopWithAzureError <- function(r) {
-  if (status_code(r) < 300) return()
+getAzureErrorMessage <- function(r) {
   msg <- paste0(as.character(sys.call(1))[1], "()") # Name of calling fucntion
   addToMsg <- function(x) {
     if (!is.null(x)) x <- strwrap(x)
     if(is.null(x)) msg else c(msg, x)
-    }
+  }
   if(inherits(content(r), "xml_document")){
     rr <- XML::xmlToList(XML::xmlParse(content(r)))
     msg <- addToMsg(rr$Code)
@@ -211,6 +245,12 @@ stopWithAzureError <- function(r) {
   }
   msg <- addToMsg(paste0("Return code: ", status_code(r)))
   msg <- paste(msg, collapse = "\n")
+  return(msg)
+}
+
+stopWithAzureError <- function(r) {
+  if (status_code(r) < 300) return()
+  msg <- getAzureErrorMessage(r)
   stop(msg, call. = FALSE)
 }
 
@@ -243,4 +283,24 @@ updateAzureActiveContext <- function(x, storageAccount, storageKey, resourceGrou
     if (!missing(directory)) x$directory <- directory
   }
   TRUE
+}
+
+## https://gist.github.com/cbare/5979354
+## Version 4 UUIDs have the form xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+## where x is any hexadecimal digit and y is one of 8, 9, A, or B
+## e.g., f47ac10b-58cc-4372-a567-0e02b2c3d479
+uuid <- function(uppercase=FALSE) {
+  
+  hex_digits <- c(as.character(0:9), letters[1:6])
+  hex_digits <- if (uppercase) toupper(hex_digits) else hex_digits
+  
+  y_digits <- hex_digits[9:12]
+  
+  paste(
+    paste0(sample(hex_digits, 8, replace=TRUE), collapse=''),
+    paste0(sample(hex_digits, 4, replace=TRUE), collapse=''),
+    paste0('4', paste0(sample(hex_digits, 3, replace=TRUE), collapse=''), collapse=''),
+    paste0(sample(y_digits,1), paste0(sample(hex_digits, 3, replace=TRUE), collapse=''), collapse=''),
+    paste0(sample(hex_digits, 12, replace=TRUE), collapse=''),
+    sep='-')
 }
