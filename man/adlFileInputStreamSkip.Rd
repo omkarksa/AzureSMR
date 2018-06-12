@@ -12,7 +12,9 @@ adlFileInputStreamSkip(adlFileInputStream, n)
 \item{n}{position to seek to}
 }
 \value{
-NULL
+Skips over and discards n bytes of data from the input stream.
+The skip method may, for a variety of reasons, end up skipping over some smaller
+number of bytes, possibly 0. The actual number of bytes skipped is returned.
 Exception IOException if there is an error
 Exception EOFException if attempting to seek past end of file
 }
@@ -46,5 +48,6 @@ Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamAvailable}}
   \code{\link{azureDataLakeRead}},
   \code{\link{createAdlFileInputStream}},
   \code{\link{createAdlFileOutputStream}},
-  \code{\link{readFromService}}
+  \code{\link{createAdlRetryPolicy}},
+  \code{\link{readFromService}}, \code{\link{shouldRetry}}
 }

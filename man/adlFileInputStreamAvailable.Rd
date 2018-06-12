@@ -45,5 +45,6 @@ Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamClose}},
   \code{\link{azureDataLakeRead}},
   \code{\link{createAdlFileInputStream}},
   \code{\link{createAdlFileOutputStream}},
-  \code{\link{readFromService}}
+  \code{\link{createAdlRetryPolicy}},
+  \code{\link{readFromService}}, \code{\link{shouldRetry}}
 }
