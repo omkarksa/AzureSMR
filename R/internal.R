@@ -265,11 +265,11 @@ getAzureDataLakeURLEncodedString <- function(strToEncode) {
 
 # log printer for Azure Data Lake Store
 printADLSMessage <- function(fileName, functionName, message, error = NULL) {
-  msg <- paste0(
-    "[", fileName, "]"
-    , " ", functionName, " - "
-    , " message=", message
-    , " error=", error 
+  msg <- paste0(Sys.time()
+    , " [", fileName, "]"
+    , " ", functionName
+    , ": message=", message
+    , ", error=", error 
   )
   print(msg)
 }
@@ -337,7 +337,7 @@ shouldRetry <- function(adlRetryPolicy,
       || httpResponseCode == 401) {
     if (adlRetryPolicy$retryCount < adlRetryPolicy$maxRetries) {
       timeSpentInMillis <- as.integer((getCurrentTimeInNanos() - adlRetryPolicy$lastAttemptStartTime) / 1000000)
-      wait(adlRetryPolicy$exponentialRetryInterval - timeSpentInMillis)
+      wait((adlRetryPolicy$exponentialRetryInterval - timeSpentInMillis)/1000)
       adlRetryPolicy$exponentialRetryInterval <- (adlRetryPolicy$exponentialRetryInterval * adlRetryPolicy$exponentialFactor)
       adlRetryPolicy$retryCount <- adlRetryPolicy$retryCount + 1
       adlRetryPolicy$lastAttemptStartTime <- getCurrentTimeInNanos()
@@ -354,20 +354,23 @@ shouldRetry <- function(adlRetryPolicy,
   return(FALSE)
 }
 
-wait <- function(milliseconds, verbose = FALSE) {
-  if (milliseconds <= 0) {
+wait <- function(waitTimeInSeconds, verbose = FALSE) {
+  if (waitTimeInSeconds <= 0) {
     return(NULL)
   }
   tryCatch(
     {
-      Sys.sleep(milliseconds)
+      if(verbose) {
+        printADLSMessage("internal.R", "wait", paste0("going into wait for waitTimeInSeconds=", waitTimeInSeconds), NULL)
+      }
+      Sys.sleep(waitTimeInSeconds)
     }, interrupt = function(e) {
       if (verbose) {
-        printADLSMessage("AzureDataLake.R", "wait", "interrupted while wait during retry", e)
+        printADLSMessage("internal.R", "wait", "interrupted while wait during retry", e)
       }
     }, error = function(e) {
       if (verbose) {
-        printADLSMessage("AzureDataLake.R", "wait", "error while wait during retry", e)
+        printADLSMessage("internal.R", "wait", "error while wait during retry", e)
       }
     }
   )
@@ -376,7 +379,7 @@ wait <- function(milliseconds, verbose = FALSE) {
 
 isSuccessfulResponse <- function(resHttp, op) {
   #if (http_error(resHttp)) return(FALSE)
-  if (http_status(resHttp)$category != "Success") return(FALSE)
+  #if (http_status(resHttp)$category != "Success") return(FALSE)
   if (status_code(resHttp) >=100 && status_code(resHttp) < 300) return(TRUE) # 1xx and 2xx return codes
   return(FALSE) # anything else
 }
@@ -392,15 +395,17 @@ callAzureDataLakeApi <- function(url, verb = "GET", azureActiveContext, adlRetry
                                   content, contenttype,
                                   verbose)
     if (!isSuccessfulResponse(resHttp) 
-        && !is.null(adlRetryPolicy) && shouldRetry(adlRetryPolicy, status_code(resHttp), NULL)) {
-      msg <- paste0("retry request", " url=", url, " verb=", verb
-                    , " azureActiveContext=", azureActiveContext
-                    , " adlsRetryPolicy=", adlRetryPolicy
-                    )
-      printADLSMessage("internal.R", "callAzureDataLakeApi", msg, NULL)
+        && shouldRetry(adlRetryPolicy, status_code(resHttp), NULL)) {
+      if (verbose) {
+        msg <- paste0("retry request: "
+                      , " status=", http_status(resHttp)$message
+                      , ", url=", url, ", verb=", verb
+                      , ", adlsRetryPolicy=", as.character.adlRetryPolicy(adlRetryPolicy))
+        printADLSMessage("internal.R", "callAzureDataLakeApi", msg, NULL)
+      }
       next # continue trying till succeeded or retries exceeded
     } else {
-      break
+      break # break on success or all planned retries failed
     }
   }
   return(resHttp)

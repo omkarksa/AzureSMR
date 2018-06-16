@@ -569,6 +569,22 @@ on_failure(is.adlRetryPolicy) <- function(call, env) {
 #' @export
 print.adlRetryPolicy <- function(x, ...){
   cat("AzureSMR adlRetryPolicy\n")
+  cat("Retry count :", x$retryCount, "\n")
+  cat("Max retries :", x$maxRetries, "\n")
+  cat("Exponential retry interval :", x$exponentialRetryInterval, "\n")
+  cat("Exponential factor :", x$exponentialFactor, "\n")
+  cat("Last attempt start time :", x$lastAttemptStartTime, "\n")
+}
+
+#' @export
+as.character.adlRetryPolicy <- function(x, ...) {
+  paste0("AzureSMR adlRetryPolicy:\n"
+  , " Retry count: ", x$retryCount, "\n"
+  , " Max retries: ", x$maxRetries, "\n"
+  , " Exponential retry interval: ", x$exponentialRetryInterval, "\n"
+  , " Exponential factor: ", x$exponentialFactor, "\n"
+  , " Last attempt start time: ", x$lastAttemptStartTime, "\n"
+  )
 }
 
 #' @export

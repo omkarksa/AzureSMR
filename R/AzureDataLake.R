@@ -524,7 +524,7 @@ azureDataLakeReadCore <- function(azureActiveContext,
   return(resHttp)
 }
 
-# AdlFileOutputStream ---- 
+# ADLS Ingress - AdlFileOutputStream ---- 
 
 #' Create an adlFileOutputStream.
 #' Create a container (`adlFileOutputStream`) for holding variables used by the Azure Data Lake Store data functions.
@@ -685,7 +685,7 @@ adlFileOutputStreamClose <- function(adlFileOutputStream,
   return(NULL)
 }
 
-# AdlFileInputStream ---- 
+# ADLS Egress - AdlFileInputStream ---- 
 
 #' Create an createAdlFileInputStream
 #' Create a container (`adlFileInputStream`) for holding variables used by the Azure Data Lake Store data functions.
