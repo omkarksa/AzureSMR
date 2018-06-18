@@ -578,13 +578,22 @@ print.adlRetryPolicy <- function(x, ...){
 
 #' @export
 as.character.adlRetryPolicy <- function(x, ...) {
-  paste0("AzureSMR adlRetryPolicy:\n"
-  , " Retry count: ", x$retryCount, "\n"
-  , " Max retries: ", x$maxRetries, "\n"
-  , " Exponential retry interval: ", x$exponentialRetryInterval, "\n"
-  , " Exponential factor: ", x$exponentialFactor, "\n"
-  , " Last attempt start time: ", x$lastAttemptStartTime, "\n"
+  xStr <- paste0("AzureSMR adlRetryPolicy:\n"
+         , " Retry policy type: ", x$retryPolicyType, "\n"
+         , " Max retries: ", x$maxRetries, "\n"
+         , " Exponential retry interval: ", x$exponentialRetryInterval, "\n"
+         , " Exponential factor: ", x$exponentialFactor, "\n"
   )
+  if(x$retryPolicyType == retryPolicyEnum$EXPONENTIALBACKOFF) {
+    xStr <- paste0(xStr
+                   , " Retry count: ", x$retryCount, "\n")
+  } else if(x$retryPolicyType == retryPolicyEnum$NONIDEMPOTENT) {
+    xStr <- paste0(xStr
+                   , " Retry count 401: ", x$retryCount401, "\n"
+                   , " Retry count 429: ", x$retryCount429, "\n"
+                   )
+  }
+  return(xStr)
 }
 
 #' @export

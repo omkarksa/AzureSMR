@@ -225,6 +225,9 @@ getCurrentTimeInNanos <- function() {
   # create a syncFlagEnum object used by the Azure Data Lake Store functions.
   syncFlagEnum <- list("DATA", "METADATA", "CLOSE", "PIPELINE")
   names(syncFlagEnum) <- syncFlagEnum
+  # create a retryPolicyEnum object used by the Azure Data Lake Store functions.
+  retryPolicyEnum <- list("EXPONENTIALBACKOFF", "NONIDEMPOTENT")
+  names(retryPolicyEnum) <- retryPolicyEnum
 }
 
 # ADLS Helper Functions ----
@@ -276,17 +279,18 @@ printADLSMessage <- function(fileName, functionName, message, error = NULL) {
 
 # ADLS Retry Policies ----
 
-#' Create adlRetryPolicy (ExponentialBackoffPolicy).
-#' Create a container (`adlRetryPolicy`) for holding variables used by the Azure Data Lake Store data functions.
+#' Create adlRetryPolicy.
+#' Create a adlRetryPolicy (`adlRetryPolicy`) for holding variables used by the Azure Data Lake Store data functions.
 #'
 #' @inheritParams setAzureContext
+#' @param retryPolicyType the type of retryPlociy object to create.
 #' @param verbose Print tracing information (default FALSE).
 #' @return An `adlRetryPolicy` object
 #'
 #' @family Azure Data Lake Store functions
 #'
-#' @references \url{https://github.com/Azure/azure-data-lake-store-java/blob/master/src/main/java/com/microsoft/azure/datalake/store/retrypolicies/ExponentialBackoffPolicy.java}
-createAdlRetryPolicy <- function(azureActiveContext, verbose = FALSE) {
+#' @references \url{https://github.com/Azure/azure-data-lake-store-java/blob/master/src/main/java/com/microsoft/azure/datalake/store/retrypolicies/RetryPolicy.java}
+createAdlRetryPolicy <- function(azureActiveContext, retryPolicyType = retryPolicyEnum$EXPONENTIALBACKOFF, verbose = FALSE) {
   azEnv <- new.env(parent = emptyenv())
   azEnv <- as.adlRetryPolicy(azEnv)
   list2env(
@@ -294,15 +298,58 @@ createAdlRetryPolicy <- function(azureActiveContext, verbose = FALSE) {
     envir = azEnv
   )
   if (!missing(azureActiveContext)) azEnv$azureActiveContext <- azureActiveContext
-  azEnv$retryCount <- 0
-  azEnv$maxRetries <- 4
-  azEnv$exponentialRetryInterval <- 1000 # in milliseconds
-  azEnv$exponentialFactor <- 4
-  azEnv$lastAttemptStartTime <- getCurrentTimeInNanos() # in nanoseconds
-  return(azEnv)
+  # init the azEnv (adlRetryPolicy) with the right params
+  azEnv$retryPolicyType <- retryPolicyType
+  if(retryPolicyType == retryPolicyEnum$EXPONENTIALBACKOFF) {
+    return(createAdlExponentialBackoffRetryPolicy(azEnv, verbose))
+  } else if(retryPolicyType == retryPolicyEnum$NONIDEMPOTENT) {
+    return(createAdlNonIdempotentRetryPolicy(azEnv, verbose))
+  } else {
+    printADLSMessage("internal.R", "createAdlRetryPolicy", 
+                     paste0("UndefinedRetryPolicyTypeError: ", azEnv$retryPolicyType),
+                     NULL)
+    return(NULL)
+  }
 }
 
-#' Check if retry should be done based on input policy adlRetryPolicy.
+#' Create an adlExponentialBackoffRetryPolicy.
+#'
+#' @param adlRetryPolicy the retrypolicy object to initialize.
+#' @param verbose Print tracing information (default FALSE).
+#' @return An `adlRetryPolicy` object
+#'
+#' @family Azure Data Lake Store functions
+#'
+#' @references \url{https://github.com/Azure/azure-data-lake-store-java/blob/master/src/main/java/com/microsoft/azure/datalake/store/retrypolicies/ExponentialBackoffPolicy.java}
+createAdlExponentialBackoffRetryPolicy <- function(adlRetryPolicy, verbose = FALSE) {
+  adlRetryPolicy$retryCount <- 0
+  adlRetryPolicy$maxRetries <- 4
+  adlRetryPolicy$exponentialRetryInterval <- 1000 # in milliseconds
+  adlRetryPolicy$exponentialFactor <- 4
+  adlRetryPolicy$lastAttemptStartTime <- getCurrentTimeInNanos() # in nanoseconds
+  return(adlRetryPolicy)
+}
+
+#' Create an adlNonIdempotentRetryPolicy.
+#'
+#' @param adlRetryPolicy the retrypolicy object to initialize.
+#' @param verbose Print tracing information (default FALSE).
+#' @return An `adlRetryPolicy` object
+#'
+#' @family Azure Data Lake Store functions
+#'
+#' @references \url{https://github.com/Azure/azure-data-lake-store-java/blob/master/src/main/java/com/microsoft/azure/datalake/store/retrypolicies/NonIdempotentRetryPolicy.java}
+createAdlNonIdempotentRetryPolicy <- function(adlRetryPolicy, verbose = FALSE) {
+  adlRetryPolicy$retryCount401 <- 0
+  adlRetryPolicy$waitInterval <- 100
+  adlRetryPolicy$retryCount429 <- 0
+  adlRetryPolicy$maxRetries <- 4
+  adlRetryPolicy$exponentialRetryInterval <- 1000 # in milliseconds
+  adlRetryPolicy$exponentialFactor <- 4
+  return(adlRetryPolicy)
+}
+
+#' Check if retry should be done based on `adlRetryPolicy`.
 #'
 #' @param adlRetryPolicy the policy object to chek for retry
 #' @param httpResponseCode the account name
@@ -312,6 +359,34 @@ createAdlRetryPolicy <- function(azureActiveContext, verbose = FALSE) {
 #'
 #' @family Azure Data Lake Store functions
 shouldRetry <- function(adlRetryPolicy, 
+                        httpResponseCode, lastException, 
+                        verbose = FALSE) {
+  if(adlRetryPolicy$retryPolicyType == retryPolicyEnum$EXPONENTIALBACKOFF) {
+    return(
+      shouldRetry.adlExponentialBackoffRetryPolicy(
+        adlRetryPolicy, httpResponseCode, lastException, verbose))
+  } else if(adlRetryPolicy$retryPolicyType == retryPolicyEnum$NONIDEMPOTENT) {
+    return(
+      shouldRetry.adlNonIdempotentRetryPolicy(
+        adlRetryPolicy, httpResponseCode, lastException, verbose))
+  } else {
+    printADLSMessage("internal.R", "shouldRetry", 
+                     paste0("UndefinedRetryPolicyTypeError: ", adlRetryPolicy$retryPolicyType),
+                     NULL)
+    return(NULL)
+  }
+}
+
+#' Check if retry should be done based on `adlRetryPolicy` (adlExponentialBackoffRetryPolicy).
+#'
+#' @param adlRetryPolicy the policy object to chek for retry
+#' @param httpResponseCode the account name
+#' @param lastException exception that was reported with failure
+#' @param verbose Print tracing information (default FALSE)
+#' @return TRUE for retry and FALSE otherwise
+#'
+#' @family Azure Data Lake Store functions
+shouldRetry.adlExponentialBackoffRetryPolicy <- function(adlRetryPolicy, 
                         httpResponseCode, lastException, 
                         verbose = FALSE) {
   if (missing(adlRetryPolicy) || missing(httpResponseCode)) {
@@ -337,7 +412,7 @@ shouldRetry <- function(adlRetryPolicy,
       || httpResponseCode == 401) {
     if (adlRetryPolicy$retryCount < adlRetryPolicy$maxRetries) {
       timeSpentInMillis <- as.integer((getCurrentTimeInNanos() - adlRetryPolicy$lastAttemptStartTime) / 1000000)
-      wait((adlRetryPolicy$exponentialRetryInterval - timeSpentInMillis)/1000)
+      wait(adlRetryPolicy$exponentialRetryInterval - timeSpentInMillis)
       adlRetryPolicy$exponentialRetryInterval <- (adlRetryPolicy$exponentialRetryInterval * adlRetryPolicy$exponentialFactor)
       adlRetryPolicy$retryCount <- adlRetryPolicy$retryCount + 1
       adlRetryPolicy$lastAttemptStartTime <- getCurrentTimeInNanos()
@@ -354,16 +429,52 @@ shouldRetry <- function(adlRetryPolicy,
   return(FALSE)
 }
 
-wait <- function(waitTimeInSeconds, verbose = FALSE) {
-  if (waitTimeInSeconds <= 0) {
+#' Check if retry should be done based on `adlRetryPolicy` (adlNonIdempotentRetryPolicy).
+#'
+#' @param adlRetryPolicy the policy object to chek for retry
+#' @param httpResponseCode the account name
+#' @param lastException exception that was reported with failure
+#' @param verbose Print tracing information (default FALSE)
+#' @return TRUE for retry and FALSE otherwise
+#'
+#' @family Azure Data Lake Store functions
+shouldRetry.adlNonIdempotentRetryPolicy <- function(adlRetryPolicy,
+                                                    httpResponseCode, lastException, 
+                                                    verbose = FALSE) {
+  if (httpResponseCode == 401 && adlRetryPolicy$retryCount401 == 0) {
+    # this could be because of call delay. Just retry once, in hope of token being renewed by now
+    wait(adlRetryPolicy$waitInterval)
+    adlRetryPolicy$retryCount401 <- (adlRetryPolicy$retryCount401 + 1)
+    return(TRUE)
+  }
+
+  if (httpResponseCode == 429) {
+    # 429 means that the backend did not change any state.
+    if (adlRetryPolicy$retryCount429 < adlRetryPolicy$maxRetries) {
+      wait(adlRetryPolicy$exponentialRetryInterval)
+      adlRetryPolicy$exponentialRetryInterval <- (adlRetryPolicy$exponentialRetryInterval * adlRetryPolicy$exponentialFactor)
+      adlRetryPolicy$retryCount429 <- (adlRetryPolicy$retryCount429 + 1)
+      return(TRUE)
+    } else {
+      return(FALSE)  # max # of retries exhausted
+    }
+  }
+
+  return(FALSE)
+}
+
+wait <- function(waitTimeInMilliSeconds, verbose = FALSE) {
+  if (waitTimeInMilliSeconds <= 0) {
     return(NULL)
   }
   tryCatch(
     {
       if(verbose) {
-        printADLSMessage("internal.R", "wait", paste0("going into wait for waitTimeInSeconds=", waitTimeInSeconds), NULL)
+        printADLSMessage("internal.R", "wait", 
+                         paste0("going into wait for waitTimeInMilliSeconds=", waitTimeInMilliSeconds),
+                         NULL)
       }
-      Sys.sleep(waitTimeInSeconds)
+      Sys.sleep(waitTimeInMilliSeconds/1000)
     }, interrupt = function(e) {
       if (verbose) {
         printADLSMessage("internal.R", "wait", "interrupted while wait during retry", e)
@@ -380,7 +491,7 @@ wait <- function(waitTimeInSeconds, verbose = FALSE) {
 isSuccessfulResponse <- function(resHttp, op) {
   #if (http_error(resHttp)) return(FALSE)
   #if (http_status(resHttp)$category != "Success") return(FALSE)
-  if (status_code(resHttp) >=100 && status_code(resHttp) < 300) return(TRUE) # 1xx and 2xx return codes
+  if (status_code(resHttp) >= 100 && status_code(resHttp) < 300) return(TRUE) # 1xx and 2xx return codes
   return(FALSE) # anything else
 }
 

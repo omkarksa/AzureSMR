@@ -2,13 +2,16 @@
 % Please edit documentation in R/internal.R
 \name{createAdlRetryPolicy}
 \alias{createAdlRetryPolicy}
-\title{Create adlRetryPolicy (ExponentialBackoffPolicy).
-Create a container (\code{adlRetryPolicy}) for holding variables used by the Azure Data Lake Store data functions.}
+\title{Create adlRetryPolicy.
+Create a adlRetryPolicy (\code{adlRetryPolicy}) for holding variables used by the Azure Data Lake Store data functions.}
 \usage{
-createAdlRetryPolicy(azureActiveContext, verbose = FALSE)
+createAdlRetryPolicy(azureActiveContext,
+  retryPolicyType = retryPolicyEnum$EXPONENTIALBACKOFF, verbose = FALSE)
 }
 \arguments{
 \item{azureActiveContext}{A container used for caching variables used by \code{AzureSMR}, created by \code{\link[=createAzureContext]{createAzureContext()}}}
+
+\item{retryPolicyType}{the type of retryPlociy object to create.}
 
 \item{verbose}{Print tracing information (default FALSE).}
 }
@@ -16,11 +19,11 @@ createAdlRetryPolicy(azureActiveContext, verbose = FALSE)
 An \code{adlRetryPolicy} object
 }
 \description{
-Create adlRetryPolicy (ExponentialBackoffPolicy).
-Create a container (\code{adlRetryPolicy}) for holding variables used by the Azure Data Lake Store data functions.
+Create adlRetryPolicy.
+Create a adlRetryPolicy (\code{adlRetryPolicy}) for holding variables used by the Azure Data Lake Store data functions.
 }
 \references{
-\url{https://github.com/Azure/azure-data-lake-store-java/blob/master/src/main/java/com/microsoft/azure/datalake/store/retrypolicies/ExponentialBackoffPolicy.java}
+\url{https://github.com/Azure/azure-data-lake-store-java/blob/master/src/main/java/com/microsoft/azure/datalake/store/retrypolicies/RetryPolicy.java}
 }
 \seealso{
 Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamAvailable}},
@@ -48,7 +51,12 @@ Other Azure Data Lake Store functions: \code{\link{adlFileInputStreamAvailable}}
   \code{\link{azureDataLakeOpenBIS}},
   \code{\link{azureDataLakeReadCore}},
   \code{\link{azureDataLakeRead}},
+  \code{\link{createAdlExponentialBackoffRetryPolicy}},
   \code{\link{createAdlFileInputStream}},
   \code{\link{createAdlFileOutputStream}},
-  \code{\link{readFromService}}, \code{\link{shouldRetry}}
+  \code{\link{createAdlNonIdempotentRetryPolicy}},
+  \code{\link{readFromService}},
+  \code{\link{shouldRetry.adlExponentialBackoffRetryPolicy}},
+  \code{\link{shouldRetry.adlNonIdempotentRetryPolicy}},
+  \code{\link{shouldRetry}}
 }

@@ -33,7 +33,7 @@ azureDataLakeListStatus <- function(azureActiveContext, azureDataLakeAccount, re
     "?op=LISTSTATUS",
     getAzureDataLakeApiVersion()
     )
-  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose)
+  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose = verbose)
   resHttp <- callAzureDataLakeApi(URL,
                                   azureActiveContext = azureActiveContext,
                                   adlRetryPolicy = retryPolicy,
@@ -95,7 +95,7 @@ azureDataLakeGetFileStatus <- function(azureActiveContext, azureDataLakeAccount,
     "?op=GETFILESTATUS",
     getAzureDataLakeApiVersion()
   )
-  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose)
+  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose = verbose)
   resHttp <- callAzureDataLakeApi(URL,
                                   azureActiveContext = azureActiveContext,
                                   adlRetryPolicy = retryPolicy,
@@ -157,7 +157,7 @@ azureDataLakeMkdirs <- function(azureActiveContext, azureDataLakeAccount, relati
     getAzureDataLakeApiVersion()
   )
   if (!missing(permission) && !is.null(permission)) URL <- paste0(URL, "&permission=", permission)
-  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose)
+  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose = verbose)
   resHttp <- callAzureDataLakeApi(URL, verb = "PUT",
                                   azureActiveContext = azureActiveContext,
                                   adlRetryPolicy = retryPolicy,
@@ -221,7 +221,12 @@ azureDataLakeCreate <- function(azureActiveContext, azureDataLakeAccount, relati
   if (!missing(bufferSize) && !is.null(bufferSize)) URL <- paste0(URL, "&buffersize=", bufferSize)
   if (!missing(replication) && !is.null(replication)) URL <- paste0(URL, "&replication=", replication)
   if (!missing(blockSize) && !is.null(blockSize)) URL <- paste0(URL, "&blocksize=", blockSize)
-  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose)
+  retryPolicy <- NULL
+  if(overwrite) {
+    retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose = verbose)
+  } else {
+    retryPolicy <- createAdlRetryPolicy(azureActiveContext, retryPolicyEnum$NONIDEMPOTENT, verbose = verbose)
+  }
   resHttp <- callAzureDataLakeApi(URL, verb = "PUT",
                                   azureActiveContext = azureActiveContext,
                                   adlRetryPolicy = retryPolicy,
@@ -262,7 +267,7 @@ azureDataLakeDelete <- function(azureActiveContext, azureDataLakeAccount, relati
     getAzureDataLakeApiVersion()
   )
   if (!missing(recursive)  && !is.null(recursive)) URL <- paste0(URL, "&recursive=", recursive)
-  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose)
+  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose = verbose)
   resHttp <- callAzureDataLakeApi(URL, verb = "DELETE",
                                   azureActiveContext = azureActiveContext,
                                   adlRetryPolicy = retryPolicy,
@@ -395,7 +400,7 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
   if (!is.null(sessionId)) URL <- paste0(URL, "&filesessionid=", sessionId)
   if (!is.null(syncFlag)) URL <- paste0(URL, "&syncFlag=", syncFlag)
   if (offsetToAppendTo >= 0) URL <- paste0(URL, "&offset=", offsetToAppendTo)
-  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose)
+  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose = verbose)
   resHttp <- callAzureDataLakeApi(URL, verb = "POST",
                                   azureActiveContext = azureActiveContext,
                                   adlRetryPolicy = retryPolicy,
@@ -516,7 +521,7 @@ azureDataLakeReadCore <- function(azureActiveContext,
   if (!missing(offset) && !is.null(offset)) URL <- paste0(URL, "&offset=", offset)
   if (!missing(length) && !is.null(length)) URL <- paste0(URL, "&length=", length)
   if (!missing(bufferSize) && !is.null(bufferSize)) URL <- paste0(URL, "&buffersize=", bufferSize)
-  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose)
+  retryPolicy <- createAdlRetryPolicy(azureActiveContext, verbose = verbose)
   resHttp <- callAzureDataLakeApi(URL,
                                   azureActiveContext = azureActiveContext,
                                   adlRetryPolicy = retryPolicy,

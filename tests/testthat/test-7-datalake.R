@@ -40,13 +40,13 @@ azureDataLakeAccount <- config$azureDataLakeAccount
 
 # Test helper functions ----
 
-createResponse <- function(httpRespStatusCode, httpRespContent) {
+createMockResponse <- function(httpRespStatusCode, httpRespContent) {
   # create an empty httr response object
   resp <- list()
   class(resp) <- "response"
   # populate the newly created httr response object with provided values
-  if(!missing(httpRespStatusCode)) resp$status_code <- httpRespStatusCode
-  if(!missing(httpRespContent)) {
+  if(!missing(httpRespStatusCode) && httpRespStatusCode >= 100) resp$status_code <- httpRespStatusCode
+  if(!missing(httpRespContent) && !is.null(httpRespContent) && nchar(httpRespContent) > 0) {
     resp$content <- httpRespContent
     resp$headers[["Content-Type"]] <- "application/json; charset=utf-8"
   }
@@ -375,13 +375,14 @@ test_that("Retries in R SDK for azure data lake account", {
 
   testFolder <- "tempfolder1Retries"
 
-  # MKDIR - mock with 4 fail and 5th success response - should PASS
+  # MKDIR - mock with 4 fail and 5th success response.
+  # This should PASS since the last(4th) retry succeeded.
   mockCallAzureDataLakeRestEndPoint <- mock(
-    createResponse(500), # initial call - mock error response
-    createResponse(408), # retry - 1 - mock error response
-    createResponse(429), # retry - 2 - mock error response
-    createResponse(401), # retry - 3 - mock error response
-    createResponse(200,  # retry - 4 - last retry - mock success response - overall PASS
+    createMockResponse(500), # initial call - mock error response
+    createMockResponse(408), # retry - 1 - mock error response
+    createMockResponse(429), # retry - 2 - mock error response
+    createMockResponse(401), # retry - 3 - mock error response
+    createMockResponse(200,  # retry - 4 - last retry - mock success response - overall PASS
                    charToRaw("{\"boolean\":true}")),
     cycle = FALSE)
   # NOTE: Stubbing is not a good idea as it may create complications for the rest of the tests.
@@ -396,15 +397,16 @@ test_that("Retries in R SDK for azure data lake account", {
   )
   expect_true(res)
 
-  # MKDIR - mock with 5 fail and 6th success response - should FAIL
+  # MKDIR - mock with 5 fail and 6th success response.
+  # This should FAIL since the last(4th) retry failed.
   mockCallAzureDataLakeRestEndPoint <- mock(
-    createResponse(500), # initial call - mock error response
-    createResponse(500), # retry - 1 - mock error response
-    createResponse(500), # retry - 2 - mock error response
-    createResponse(500), # retry - 3 - mock error response
-    createResponse(500,  # retry - 4 - last retry - mock error response - overall FAIL
+    createMockResponse(500), # initial call - mock error response
+    createMockResponse(500), # retry - 1 - mock error response
+    createMockResponse(500), # retry - 2 - mock error response
+    createMockResponse(500), # retry - 3 - mock error response
+    createMockResponse(500,  # retry - 4 - last retry - mock error response - overall FAIL
                    charToRaw("{\"RemoteException\":{\"exception\":\"RuntimeException\",\"message\":\"MkDir failed with error xxx\",\"javaClassName\":\"java.lang.RuntimeException\"}}")),
-    createResponse(200,  # retry - 5 - retry limit exceeded - mock success response - retries finished, so overall FAIL
+    createMockResponse(200,  # retry - 5 - retry limit exceeded - mock success response - retries finished, so overall FAIL
                    charToRaw("{\"boolean\":true}")), 
     cycle = FALSE)
   with_mock(
@@ -416,8 +418,8 @@ test_that("Retries in R SDK for azure data lake account", {
   # GETFILESTATUS - mock with 1 HTTP404 and then success response.
   # Since first error is non-retriable, overall request should still FAIL.
   mockCallAzureDataLakeRestEndPoint <- mock(
-    createResponse(404), # initial call - mock error response
-    createResponse(200,  # retry - 1 - mock success response
+    createMockResponse(404), # initial call - mock error response
+    createMockResponse(200,  # retry - 1 - mock success response
                    charToRaw(paste0("{\"FileStatus\":"
                                     , "{"
                                     , "\"length\":0"
@@ -440,5 +442,36 @@ test_that("Retries in R SDK for azure data lake account", {
     "AzureSMR:::callAzureDataLakeRestEndPoint" = mockCallAzureDataLakeRestEndPoint,
     expect_error(azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFolder, verbose = verbose)),
     expect_called(mockCallAzureDataLakeRestEndPoint, 1)
+  )
+  
+  # CREATE (overwrite = TRUE) - mock with 2 fail and 3rd success response.
+  # This will be an ExponentialBackoffRetryPolicy. 
+  # This should PASS because the 2nd retry succeeded.
+  mockCallAzureDataLakeRestEndPoint <- mock(
+    createMockResponse(500), # initial call - mock error response
+    createMockResponse(408), # retry - 1 - mock error response
+    createMockResponse(200), # retry - 2 - mock success response - overall PASS
+    cycle = FALSE)
+  with_mock(
+    # use fully qualified name of function to be mocked, else this doesnt work
+    "AzureSMR:::callAzureDataLakeRestEndPoint" = mockCallAzureDataLakeRestEndPoint,
+    res <- azureDataLakeCreate(asc, azureDataLakeAccount, testFolder, overwrite = TRUE, verbose = verbose),
+    expect_called(mockCallAzureDataLakeRestEndPoint, 3)
+  )
+  expect_null(res)
+  
+  # CREATE (overwrite = FALSE) - mock with 2 fail and 3rd success response.
+  # This will be NonIdempotentRetryPolicy. 
+  # This should FAIL because the 2rd retry in non-retriable.
+  mockCallAzureDataLakeRestEndPoint <- mock(
+    createMockResponse(401), # initial call - mock error response
+    createMockResponse(429), # retry - 1 - mock error response
+    createMockResponse(500), # retry - 2 - mock success response - overall PASS
+    cycle = FALSE)
+  with_mock(
+    # use fully qualified name of function to be mocked, else this doesnt work
+    "AzureSMR:::callAzureDataLakeRestEndPoint" = mockCallAzureDataLakeRestEndPoint,
+    expect_error(azureDataLakeCreate(asc, azureDataLakeAccount, testFolder, overwrite = FALSE, verbose = verbose)),
+    expect_called(mockCallAzureDataLakeRestEndPoint, 3)
   )
 })
