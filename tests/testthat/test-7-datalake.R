@@ -66,20 +66,32 @@ test_that("Can create, list, get, update and delete items in an azure data lake 
 
   testFolder <- "tempfolder1?1文件夹1" # also test for special characters and utf16 languages
   Encoding(testFolder) <- "UTF-8" # need to explicitly set the string encoding in case of other language characters!?
-  testFile1 <- "tempfile00.txt"
-  testFile2 <- "tempfile01.txt"
+  testFile1 <- "tempfile01.txt"
+  testFile2 <- "tempfile02.txt"
+  testFolderRename <- "tempfolderRename"
+  testFolderConcat <- testFolder #"tempFolderConcat"
+  testFileConcatDest <- paste0(testFolderConcat, "/", "tempfileconcatdest.txt")
+  testFileConcatSrc1 <- paste0(testFolderConcat, "/", "tempfileconcatsrc01.txt")
+  testFileConcatSrc2 <- paste0(testFolderConcat, "/", "tempfileconcatsrc02.txt")
+  testFileConcatSrc3 <- paste0(testFolderConcat, "/", "tempfileconcatsrc03.txt")
 
   # cleanup the account before starting tests!
   try(
     azureDataLakeDelete(asc, azureDataLakeAccount, testFolder, TRUE, verbose = verbose)
   )
+  try(
+    azureDataLakeDelete(asc, azureDataLakeAccount, testFolderRename, TRUE, verbose = verbose)
+  )
+  try(
+    azureDataLakeDelete(asc, azureDataLakeAccount, testFolderConcat, TRUE, verbose = verbose)
+  )
 
   # now start the tests
 
   # LISTSTATUS on non-existent test directory
-  expect_error(azureDataLakeListStatus(asc, azureDataLakeAccount, testFolder))
+  expect_error(azureDataLakeListStatus(asc, azureDataLakeAccount, testFolder, verbose = verbose))
   # GETFILESTATUS on non-existent test directory
-  expect_error(azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFolder, verbose))
+  expect_error(azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFolder, verbose = verbose))
 
   # MKDIRS
   res <- azureDataLakeMkdirs(asc, azureDataLakeAccount, testFolder, verbose = verbose)
@@ -121,6 +133,14 @@ test_that("Can create, list, get, update and delete items in an azure data lake 
   # pathsuffix of a file in getfilestatus will be empty!
   expect_equal(res$FileStatus.pathSuffix == "", TRUE)
   expect_equal(res$FileStatus.length, 4)
+  # CREATE - check 3 - LS on a file
+  res <- azureDataLakeListStatus(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile1), verbose = verbose)
+  expect_is(res, "data.frame")
+  expect_equal(nrow(res), 1)
+  expect_equal(ncol(res), 12)
+  # pathsuffix of a file in liststatus will be empty!
+  expect_equal(res$FileStatuses.FileStatus.pathSuffix == "", TRUE)
+  expect_equal(res$FileStatuses.FileStatus.length, c(4))
 
   # READ (OPEN) # CREATE - check 3
   res <- azureDataLakeRead(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile1), length = 2L, bufferSize = 4194304L, verbose = verbose)
@@ -145,6 +165,86 @@ test_that("Can create, list, get, update and delete items in an azure data lake 
   expect_equal(rawToChar(res), "abcdstuv")
   res <- azureDataLakeRead(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile2), verbose = verbose)
   expect_equal(rawToChar(res), "efghwxyz")
+
+  # RENAME 1 (file, overwrite = false)
+  res <- azureDataLakeRename(asc, azureDataLakeAccount, 
+                      paste0(testFolder, "/", testFile1), # src
+                      paste0(testFolder, "/", testFile2), # dest
+                      verbose = verbose)
+  expect_false(res)
+
+  # RENAME 2 (file, overwrite = true)
+  res <- azureDataLakeRename(asc, azureDataLakeAccount, 
+                             paste0(testFolder, "/", testFile1), # src
+                             paste0(testFolder, "/", testFile2), # dest
+                             overwrite = TRUE,
+                             verbose = verbose)
+  expect_true(res)
+  # RENAME 2 - check
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile2), verbose = verbose)
+  expect_is(res, "data.frame")
+  expect_equal(nrow(res), 1)
+  expect_equal(ncol(res), 12)
+  # pathsuffix of a file in getfilestatus will be empty!
+  expect_equal(res$FileStatus.pathSuffix == "", TRUE)
+  expect_equal(res$FileStatus.length, 8)
+
+  # RENAME 3 (folder)
+  res <- azureDataLakeRename(asc, azureDataLakeAccount, 
+                             testFolder,       # src
+                             testFolderRename, # dest
+                             verbose = verbose)
+  expect_true(res)
+  # RENAME 3 - check
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFolderRename, verbose = verbose)
+  expect_is(res, "data.frame")
+  expect_gte(nrow(res), 1)
+  expect_equal(ncol(res), 11)
+
+  # RENAME 4 (folder rename back to same name)
+  res <- azureDataLakeRename(asc, azureDataLakeAccount, 
+                             testFolderRename, # src
+                             testFolder,       # dest
+                             verbose = verbose)
+  expect_true(res)
+  # RENAME 4 - check
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFolder, verbose = verbose)
+  expect_is(res, "data.frame")
+  expect_gte(nrow(res), 1)
+  expect_equal(ncol(res), 11)
+
+  # MSCONCAT
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, testFileConcatDest,
+                             "755", FALSE, 4194304L, 3L, 268435456L, charToRaw("1234"), verbose = verbose)
+  expect_null(res)
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, testFileConcatSrc1,
+                             "755", FALSE, 4194304L, 3L, 268435456L, charToRaw("abcd"), verbose = verbose)
+  expect_null(res)
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, testFileConcatSrc2,
+                             "755", FALSE, 4194304L, 3L, 268435456L, charToRaw("efgh"), verbose = verbose)
+  expect_null(res)
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, testFileConcatSrc3,
+                             "755", FALSE, 4194304L, 3L, 268435456L, charToRaw("ijkl"), verbose = verbose)
+  expect_null(res)
+  res <- azureDataLakeConcat(asc, azureDataLakeAccount, testFileConcatDest,
+                             c(testFileConcatSrc1, testFileConcatSrc2, testFileConcatSrc3),
+                             verbose = verbose)
+  expect_null(res)
+  # MSCONCAT - check - 1 - GFS
+  res <- azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFileConcatDest, verbose = verbose)
+  expect_is(res, "data.frame")
+  expect_equal(nrow(res), 1)
+  expect_equal(ncol(res), 12)
+  # pathsuffix of a file in getfilestatus will be empty!
+  expect_equal(res$FileStatus.pathSuffix == "", TRUE)
+  expect_equal(res$FileStatus.length, 16)
+  # MSCONCAT - check - 2 - contents of concatenated file
+  res <- azureDataLakeRead(asc, azureDataLakeAccount, testFileConcatDest, verbose = verbose)
+  expect_equal(rawToChar(res), "1234abcdefghijkl")
+  # MSCONCAT - check - 3 - src files are deleted
+  expect_error(azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFileConcatSrc1, verbose = verbose))
+  expect_error(azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFileConcatSrc2, verbose = verbose))
+  expect_error(azureDataLakeGetFileStatus(asc, azureDataLakeAccount, testFileConcatSrc3, verbose = verbose))
 
   # DELETE
   res <- azureDataLakeDelete(asc, azureDataLakeAccount, testFolder, TRUE, verbose = verbose)
