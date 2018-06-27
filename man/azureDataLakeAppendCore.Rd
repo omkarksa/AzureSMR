@@ -4,13 +4,15 @@
 \alias{azureDataLakeAppendCore}
 \title{The Core Append API.}
 \usage{
-azureDataLakeAppendCore(azureActiveContext, azureDataLakeAccount, relativePath,
-  bufferSize, contents, contentSize = -1L, leaseId = NULL,
-  sessionId = NULL, syncFlag = NULL, offsetToAppendTo = -1,
-  verbose = FALSE)
+azureDataLakeAppendCore(azureActiveContext, adlFileOutputStream = NULL,
+  azureDataLakeAccount, relativePath, bufferSize, contents, contentSize = -1L,
+  leaseId = NULL, sessionId = NULL, syncFlag = NULL,
+  offsetToAppendTo = -1, verbose = FALSE)
 }
 \arguments{
 \item{azureActiveContext}{A container used for caching variables used by \code{AzureSMR}, created by \code{\link[=createAzureContext]{createAzureContext()}}}
+
+\item{adlFileOutputStream}{The adlFileOutputStream object to operate with.}
 
 \item{azureDataLakeAccount}{Name of the Azure Data Lake account.}
 
