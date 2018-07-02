@@ -22,7 +22,7 @@
 if(interactive()) library("testthat")
 if(interactive()) library("mockery")
 
-settingsfile <- "E:/Projects/R/configs/config.json" #find_config_json()
+settingsfile <- find_config_json()
 config <- read.AzureSMR.config(settingsfile)
 
 context("Data Lake Store")
@@ -56,7 +56,7 @@ createMockResponse <- function(httpRespStatusCode, httpRespContent) {
 # test_that("Can create, list, get, update and delete items in R SDK for azure data lake account", { ----
 
 test_that("Can create, list, get, update and delete items in R SDK for azure data lake account", {
-  skip("skip") #skip_if_missing_config(settingsfile)
+  skip_if_missing_config(settingsfile)
 
   printADLSMessage("test-7-datalake.R", "test_that",
                    "Can create, list, get, update and delete items in R SDK for azure data lake account",
@@ -279,6 +279,7 @@ test_that("Encoding special characters in R SDK for azure data lake account", {
   nums <- seq(32:126)
   for (num in nums) {
     chr <- rawToChar(as.raw(num))
+    Encoding(chr) <- "UTF-8"
     if(chr == '?') {
       uploadContentData[1] <- paste0(
         "fileCharSupported-"
@@ -297,6 +298,7 @@ test_that("Encoding special characters in R SDK for azure data lake account", {
       )
     } else {
       fileName <- paste0(fileName, chr)
+      Encoding(fileName) <- "UTF-8"
     }
   }
   printADLSMessage("test-7-datalake.R"
@@ -315,6 +317,22 @@ test_that("Encoding special characters in R SDK for azure data lake account", {
     , format(Sys.time(), "%d-%m-%Y %H-%M-%OS")
     , "a_"
     , substr(fileName, (getContentSize(fileName)/2)+1, getContentSize(fileName)) 
+    , "_FILE"
+  )
+
+  # reassign directly
+  uploadContentData[3] <- paste0(
+    "fileCharSupported-"
+    , format(Sys.time(), "%d-%m-%Y %H-%M-%OS")
+    , "a_"
+    , " !\"$%25&'()*+,-.0123456789;<=>@ABCDEFGHIJKLMNOP"
+    , "_FILE"
+  )
+  uploadContentData[4] <- paste0(
+    "fileCharSupported-"
+    , format(Sys.time(), "%d-%m-%Y %H-%M-%OS")
+    , "a_"
+    , "QRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~"
     , "_FILE"
   )
 
@@ -342,7 +360,7 @@ datafile4MB <- paste0(getwd(), "/data/test4MB.bin")
 datafile6MB <- paste0(getwd(), "/data/test6MB.bin")
 
 test_that("Can append and read using buffered IO streams from files in R SDK for azure data lake account", {
-  skip("skip") #skip_if_missing_config(settingsfile)
+  skip_if_missing_config(settingsfile)
 
   printADLSMessage("test-7-datalake.R", "test_that",
                    "Can append and read using buffered IO streams from files in R SDK for azure data lake account",
@@ -549,7 +567,7 @@ test_that("Can append and read using buffered IO streams from files in R SDK for
 # test_that("Different retry policies for various APIs in R SDK for azure data lake account", { ----
 
 test_that("Different retry policies for various APIs in R SDK for azure data lake account", {
-  skip("skip") #skip_if_missing_config(settingsfile)
+  skip_if_missing_config(settingsfile)
 
   printADLSMessage("test-7-datalake.R", "test_that",
                    "Different retry policies for various APIs in R SDK for azure data lake account",
@@ -665,7 +683,7 @@ test_that("Different retry policies for various APIs in R SDK for azure data lak
 # test_that("Bad offset error handling for appends in R SDK for azure data lake account", { ----
 
 test_that("Bad offset error handling for appends in R SDK for azure data lake account", {
-  skip("skip") #skip_if_missing_config(settingsfile)
+  skip_if_missing_config(settingsfile)
 
   printADLSMessage("test-7-datalake.R", "test_that",
                    "Bad offset error handling for appends in R SDK azure data lake account",
