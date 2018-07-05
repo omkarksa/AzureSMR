@@ -53,13 +53,13 @@ createMockResponse <- function(httpRespStatusCode, httpRespContent) {
   return(resp)
 }
 
-# test_that("Can create, list, get, update and delete items in an azure data lake account", { ----
+# test_that("Can create, list, get, update and delete items in R SDK for azure data lake account", { ----
 
-test_that("Can create, list, get, update and delete items in an azure data lake account", {
+test_that("Can create, list, get, update and delete items in R SDK for azure data lake account", {
   skip_if_missing_config(settingsfile)
 
   printADLSMessage("test-7-datalake.R", "test_that",
-                   "Can create, list, get, update and delete items in an azure data lake account",
+                   "Can create, list, get, update and delete items in R SDK for azure data lake account",
                    NULL)
 
   verbose <- FALSE
@@ -251,17 +251,17 @@ test_that("Can create, list, get, update and delete items in an azure data lake 
   expect_true(res)
 })
 
-# test_that("Can append and read using buffered IO streams from files in an azure data lake account", { ----
+# test_that("Can append and read using buffered IO streams from files in R SDK for azure data lake account", { ----
 
 datafile2MB <- paste0(getwd(), "/data/test2MB.bin")
 datafile4MB <- paste0(getwd(), "/data/test4MB.bin")
 datafile6MB <- paste0(getwd(), "/data/test6MB.bin")
 
-test_that("Can append and read using buffered IO streams from files in an azure data lake account", {
+test_that("Can append and read using buffered IO streams from files in R SDK for azure data lake account", {
   skip_if_missing_config(settingsfile)
 
   printADLSMessage("test-7-datalake.R", "test_that",
-                   "Can append and read using buffered IO streams from files in an azure data lake account",
+                   "Can append and read using buffered IO streams from files in R SDK for azure data lake account",
                    NULL)
 
   verbose <- FALSE
@@ -462,13 +462,13 @@ test_that("Can append and read using buffered IO streams from files in an azure 
   expect_true(res)
 })
 
-# test_that("Retries in R SDK for azure data lake account", { ----
+# test_that("Different retry policies for various APIs in R SDK for azure data lake account", { ----
 
-test_that("Retries in R SDK for azure data lake account", {
+test_that("Different retry policies for various APIs in R SDK for azure data lake account", {
   skip_if_missing_config(settingsfile)
 
   printADLSMessage("test-7-datalake.R", "test_that",
-                   "Retries in R SDK for azure data lake account",
+                   "Different retry policies for various APIs in R SDK for azure data lake account",
                    NULL)
 
   verbose <- FALSE
@@ -505,7 +505,9 @@ test_that("Retries in R SDK for azure data lake account", {
     createMockResponse(500), # retry - 2 - mock error response
     createMockResponse(500), # retry - 3 - mock error response
     createMockResponse(500,  # retry - 4 - last retry - mock error response - overall FAIL
-                   charToRaw("{\"RemoteException\":{\"exception\":\"RuntimeException\",\"message\":\"MkDir failed with error xxx\",\"javaClassName\":\"java.lang.RuntimeException\"}}")),
+                   charToRaw("{\"RemoteException\":{\"exception\":\"RuntimeException\"
+                             ,\"message\":\"MkDir failed with error xxx\"
+                             ,\"javaClassName\":\"java.lang.RuntimeException\"}}")),
     createMockResponse(200,  # retry - 5 - retry limit exceeded - mock success response - retries finished, so overall FAIL
                    charToRaw("{\"boolean\":true}")), 
     cycle = FALSE)
@@ -574,4 +576,71 @@ test_that("Retries in R SDK for azure data lake account", {
     expect_error(azureDataLakeCreate(asc, azureDataLakeAccount, testFolder, overwrite = FALSE, verbose = verbose)),
     expect_called(mockCallAzureDataLakeRestEndPoint, 3)
   )
+})
+
+# test_that("Bad offset error handling for appends in R SDK for azure data lake account", { ----
+
+test_that("Bad offset error handling for appends in R SDK for azure data lake account", {
+  skip_if_missing_config(settingsfile)
+
+  printADLSMessage("test-7-datalake.R", "test_that",
+                   "Bad offset error handling for appends in R SDK azure data lake account",
+                   NULL)
+
+  verbose <- FALSE
+  testFolder <- "tempfolder3BadOffset"
+  testFile <- "test2n2MB.bin"
+
+  # cleanup the account before starting tests!
+  try(
+    azureDataLakeDelete(asc, azureDataLakeAccount, testFolder, TRUE, verbose = verbose)
+  )
+
+  # MKDIRS
+  res <- azureDataLakeMkdirs(asc, azureDataLakeAccount, testFolder, verbose = verbose)
+  expect_true(res)
+
+  # CREATE
+  res <- azureDataLakeCreate(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile), "755", verbose = verbose)
+  expect_null(res)
+
+  # APPEND - test2MB.bin
+  binData <- readBin(con = datafile2MB, what = "raw", n = 2097152)
+  adlFOS <- azureDataLakeAppendBOS(asc, azureDataLakeAccount, paste0(testFolder, "/", testFile), verbose = verbose)
+  expect_is(adlFOS, "adlFileOutputStream")
+  # Write to the stream
+  res <- adlFileOutputStreamWrite(adlFOS, binData, 1, 2097152L, verbose = verbose)
+  expect_null(res)
+
+  # MKDIR - mock with 4 fail and 5th success response.
+  # This should PASS since the last(2nd) retry succeeded.
+  mockCallAzureDataLakeRestEndPoint <- mock(
+    createMockResponse(408), # initial call - mock error response - request times out during an append
+    createMockResponse(400, # retry 1 - mock error response - retry results in a Bad Offset => previous 
+                            # request succeeded on backend
+                       charToRaw(paste0("{\"RemoteException\":"
+                                        ,"{"
+                                        ,"\"exception\":\"BadOffsetException\""
+                                        ,",\"message\":\"APPEND failed with error 0x83090015 (Bad request. Invalid offset.). "
+                                        ,"[71f3c65c-b077-49ce-8f43-e1f2eea2f2fa][2018-06-26T23:35:12.1960963-07:00]\""
+                                        ,",\"javaClassName\":\"org.apache.hadoop.fs.adl.BadOffsetException\""
+                                        ,"}"
+                                        ,"}"
+                                        )
+                                 )
+                       ),
+    createMockResponse(500), # retry - 1 - mock error response to trigger a retry within badoffset error handling
+    createMockResponse(200), # retry - 2 - last retry - mock success response - overall PASS
+    cycle = FALSE)
+  with_mock(
+    # use fully qualified name of function to be mocked, else this doesnt work
+    "AzureSMR:::callAzureDataLakeRestEndPoint" = mockCallAzureDataLakeRestEndPoint,
+    res <- adlFileOutputStreamClose(adlFOS), # close flushes the buffered data as 4MB chunks
+    expect_called(mockCallAzureDataLakeRestEndPoint, 4)
+  )
+  expect_null(res)
+
+  # DELETE
+  res <- azureDataLakeDelete(asc, azureDataLakeAccount, testFolder, TRUE, verbose = verbose)
+  expect_true(res)
 })
