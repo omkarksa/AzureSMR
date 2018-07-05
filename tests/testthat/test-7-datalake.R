@@ -301,9 +301,6 @@ test_that("Encoding special characters in R SDK for azure data lake account", {
       Encoding(fileName) <- "UTF-8"
     }
   }
-  printADLSMessage("test-7-datalake.R"
-                   , "test_that(\"Encoding special characters in R SDK for azure data lake account\""
-                   , paste0("fileName=", fileName), NULL)
   # Reason to split into 2 chunks than 1 single chunk was to overcome the limit url size limit.
   uploadContentData[3] <- paste0(
     "fileCharSupported-"
@@ -341,7 +338,7 @@ test_that("Encoding special characters in R SDK for azure data lake account", {
   expect_true(res)
   for (testFolderEnc in uploadContentData) {
     Encoding(testFolderEnc) <- "UTF-8"
-    if(TRUE) printADLSMessage("test-7-datalake.R"
+    if(verbose) printADLSMessage("test-7-datalake.R"
                                  , "test_that(\"Encoding special characters in R SDK for azure data lake account\""
                                  , paste0("testFolderEnc=", testFolderEnc), NULL)
     res <- azureDataLakeMkdirs(asc, azureDataLakeAccount, paste0(testFolder, "/", testFolderEnc), verbose = TRUE)
