@@ -440,7 +440,7 @@ azureDataLakeConcat <- function(azureActiveContext, azureDataLakeAccount, relati
 #' @seealso \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#append-org.apache.hadoop.fs.Path-int-org.apache.hadoop.util.Progressable-}
 azureDataLakeAppend <- function(azureActiveContext, azureDataLakeAccount, relativePath, 
                                 bufferSize, contents, contentSize = -1L, verbose = FALSE) {
-  resHttp <- azureDataLakeAppendCore(azureActiveContext, azureDataLakeAccount, relativePath,
+  resHttp <- azureDataLakeAppendCore(azureActiveContext, NULL, azureDataLakeAccount, relativePath,
                                      bufferSize, contents, contentSize, verbose = verbose)
   stopWithAzureError(resHttp)
   # retrun a NULL (void)
@@ -478,6 +478,7 @@ azureDataLakeAppendBOS <- function(azureActiveContext, azureDataLakeAccount, rel
 #'
 #' @inheritParams setAzureContext
 #' @param azureDataLakeAccount Name of the Azure Data Lake account.
+#' @param adlFileOutputStream The adlFileOutputStream object to operate with.
 #' @param relativePath Relative path of a file.
 #' @param bufferSize Size of the buffer to be used.
 #' @param contents raw contents to be written to the file.
@@ -509,7 +510,7 @@ azureDataLakeAppendBOS <- function(azureActiveContext, azureDataLakeAccount, rel
 #' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Append_to_a_File}
 #' @seealso \url{https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/WebHDFS.html#Buffer_Size}
 #' @seealso \url{https://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html#append-org.apache.hadoop.fs.Path-int-org.apache.hadoop.util.Progressable-}
-azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, relativePath, bufferSize, 
+azureDataLakeAppendCore <- function(azureActiveContext, adlFileOutputStream = NULL, azureDataLakeAccount, relativePath, bufferSize, 
                                     contents, contentSize = -1L, 
                                     leaseId = NULL, sessionId = NULL, syncFlag = NULL, 
                                     offsetToAppendTo = -1,
@@ -544,6 +545,10 @@ azureDataLakeAppendCore <- function(azureActiveContext, azureDataLakeAccount, re
                                   adlRetryPolicy = retryPolicy,
                                   content = contents[1:contentSize],
                                   verbose = verbose)
+  # update retry count - required for bad offset handling
+  if (!is.null(adlFileOutputStream)) {
+    adlFileOutputStream$numRetries <- retryPolicy$retryCount
+  }
   return(resHttp)
 }
 
@@ -700,6 +705,9 @@ createAdlFileOutputStream <- function(azureActiveContext, accountName, relativeP
   azEnv$streamClosed <- FALSE
   azEnv$lastFlushUpdatedMetadata <- FALSE
 
+  # additional param required to implement bad offset handling
+  azEnv$numRetries <- 0
+
   return(azEnv)
 }
 
@@ -771,6 +779,17 @@ addToBuffer <- function(adlFileOutputStream, contents, off, len) {
   adlFileOutputStream$cursor <- as.integer(cursor + len)
 }
 
+doZeroLengthAppend <- function(adlFileOutputStream, azureDataLakeAccount, relativePath, offset, verbose = FALSE) {
+  resHttp <- azureDataLakeAppendCore(adlFileOutputStream$azureActiveContext, adlFileOutputStream,
+                                     azureDataLakeAccount, relativePath,
+                                     4194304L, contents = raw(0), contentSize = 0L,
+                                     leaseId = adlFileOutputStream$leaseId, sessionId = adlFileOutputStream$leaseId,
+                                     syncFlag = syncFlagEnum$METADATA, offsetToAppendTo = 0, verbose = verbose)
+  stopWithAzureError(resHttp)
+  # retrun a NULL (void)
+  return(TRUE)
+}
+
 #' Flush an adlFileOutputStream.
 #'
 #' @param adlFileOutputStream adlFileOutputStream of the file
@@ -797,13 +816,45 @@ adlFileOutputStreamFlush <- function(adlFileOutputStream, syncFlag = syncFlagEnu
       && (syncFlag == syncFlagEnum$METADATA)) {
     return(NULL)
   }
-  resHttp <- azureDataLakeAppendCore(adlFileOutputStream$azureActiveContext, 
+  resHttp <- azureDataLakeAppendCore(adlFileOutputStream$azureActiveContext, adlFileOutputStream,
                              adlFileOutputStream$accountName, adlFileOutputStream$relativePath, 4194304L, 
                              adlFileOutputStream$buffer, as.integer(adlFileOutputStream$cursor - 1), 
                              adlFileOutputStream$leaseId, adlFileOutputStream$leaseId, syncFlag, 
                              adlFileOutputStream$remoteCursor,
                              verbose)
-  # TODO: implement - retry/error recovery (?)
+  if(!isSuccessfulResponse(resHttp)) {
+    errMessage <- content(resHttp, "text", encoding = "UTF-8")
+    if (adlFileOutputStream$numRetries > 0 && status_code(resHttp) == 400
+        && grepl("BadOffsetException", errMessage, ignore.case = TRUE)) {
+      # if this was a retry and we get bad offset, then this might be because we got a transient
+      # failure on first try, but request succeeded on back-end. In that case, the retry would fail
+      # with bad offset. To detect that, we check if there was a retry done, and if the current error we
+      # have is bad offset.
+      # If so, do a zero-length append at the current expected Offset, and if that succeeds,
+      # then the file length must be good - swallow the error. If this append fails, then the last append
+      # did not succeed and we have some other offset on server - bubble up the error.
+      expectedRemoteLength <- (adlFileOutputStream$remoteCursor + adlFileOutputStream$cursor)
+      append0Succeeded <- doZeroLengthAppend(adlFileOutputStream, 
+                                             adlFileOutputStream$accountName, 
+                                             adlFileOutputStream$relativePath, 
+                                             expectedRemoteLength)
+      if (append0Succeeded) {
+        printADLSMessage("AzureDataLake.R", "adlFileOutputStreamFlush", 
+                         paste0("zero-length append succeeded at expected offset (", expectedRemoteLength, "), ",
+                                " ignoring BadOffsetException for session: ", adlFileOutputStream$leaseId,
+                                ", file: ", adlFileOutputStream$relativePath))
+        adlFileOutputStream$remoteCursor <- (adlFileOutputStream$remoteCursor + adlFileOutputStream$cursor)
+        adlFileOutputStream$cursor <- 0
+        adlFileOutputStream$lastFlushUpdatedMetadata <- FALSE
+        return(NULL)
+      } else {
+        printADLSMessage("AzureDataLake.R", "adlFileOutputStreamFlush", 
+                         paste0("Append failed at expected offset(", expectedRemoteLength,
+                                "). Bubbling exception up for session: ", adlFileOutputStream$leaseId,
+                                ", file: ", adlFileOutputStream$relativePath))
+      }
+    }
+  }
   stopWithAzureError(resHttp)
   adlFileOutputStream$remoteCursor <- (adlFileOutputStream$remoteCursor + (adlFileOutputStream$cursor - 1))
   adlFileOutputStream$cursor <- 1L
